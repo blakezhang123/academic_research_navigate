@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metallurgy Intel · 金属材料课题组调研器</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                Roboto, "Microsoft YaHei", sans-serif;
+            background: #f4f6fb;
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+
+        .app-container {
+            max-width: 1180px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .header-icon {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: #1a1a2e;
+            color: #fff;
+            font-size: 26px;
+            flex-shrink: 0;
+        }
+
+        .header h1 {
+            font-size: 27px;
+            line-height: 1.15;
+            color: #111827;
+            letter-spacing: -0.5px;
+        }
+
+        .header h1 span {
+            color: #4285f4;
+        }
+
+        .header .sub {
+            margin-top: 4px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .control-card,
+        .result-card {
+            background: #fff;
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
+            border-radius: 20px;
+        }
+
+        .control-card {
+            padding: 28px 32px;
+            margin-bottom: 24px;
+        }
+
+        .mode-toggle {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+
+        .mode-btn {
+            padding: 14px 18px;
+            background: #fafbfc;
+            border: 2px solid #e7ecf3;
+            border-radius: 14px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 15px;
+            font-weight: 700;
+            color: #475569;
+            transition: 0.2s ease;
+        }
+
+        .mode-btn:hover {
+            border-color: #b8c9ed;
+            background: #f5f8ff;
+        }
+
+        .mode-btn.active {
+            border-color: #4285f4;
+            background: #edf4ff;
+            color: #1e3a8a;
+        }
+
+        .mode-desc {
+            display: block;
+            font-size: 12px;
+            line-height: 1.45;
+            font-weight: 400;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .form-group.wide {
+            flex: 1.35;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            letter-spacing: 0.2px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            height: 52px;
+            padding: 12px 14px;
+            border: 2px solid #e7ecf3;
+            border-radius: 12px;
+            font-size: 15px;
+            color: #1e293b;
+            background: #fafbfc;
+            transition: 0.2s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4285f4;
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(66, 133, 244, 0.12);
+        }
+
+        .form-group input::placeholder {
+            color: #94a3b8;
+        }
+
+        .form-group select:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-generate {
+            height: 52px;
+            padding: 0 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            background: #1a1a2e;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 700;
+            white-space: nowrap;
+            transition: 0.2s ease;
+        }
+
+        .btn-generate:hover:not(:disabled) {
+            transform: translateY(-1px);
+            background: #2d2d44;
+            box-shadow: 0 8px 20px rgba(26, 26, 46, 0.2);
+        }
+
+        .btn-generate:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+        }
+
+        .btn-generate.loading .spinner {
+            display: inline-block;
+        }
+
+        .btn-generate.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .quick-pick {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 10px;
+        }
+
+        .quick-pick button {
+            border: 1px solid #dbe4f0;
+            background: #f7f9fc;
+            color: #475569;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.15s ease;
+        }
+
+        .quick-pick button:hover {
+            border-color: #4285f4;
+            background: #edf4ff;
+            color: #1d4ed8;
+        }
+
+        .api-hint {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 8px 14px;
+            border: 1px dashed #d9e1ec;
+            border-radius: 999px;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .api-hint strong {
+            color: #1e293b;
+        }
+
+        .model-count {
+            margin-left: 6px;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 400;
+        }
+
+        .result-card {
+            min-height: 260px;
+            padding: 30px 34px;
+            overflow-x: auto;
+        }
+
+        .result-placeholder {
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #94a3b8;
+        }
+
+        .result-placeholder .big-icon {
+            margin-bottom: 14px;
+            font-size: 52px;
+            opacity: 0.65;
+        }
+
+        .result-placeholder h3 {
+            color: #475569;
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .result-placeholder p {
+            margin-top: 7px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .result-content {
+            display: none;
+        }
+
+        .result-content.active {
+            display: block;
+        }
+
+        #reportOutput {
+            color: #1e293b;
+            font-size: 15px;
+            line-height: 1.75;
+        }
+
+        #reportOutput h1,
+        #reportOutput h2,
+        #reportOutput h3,
+        #reportOutput h4 {
+            margin-top: 25px;
+            margin-bottom: 12px;
+            color: #0f172a;
+        }
+
+        #reportOutput h1 {
+            border-bottom: 2px solid #edf2f7;
+            padding-bottom: 9px;
+            font-size: 24px;
+        }
+
+        #reportOutput h2 {
+            font-size: 20px;
+        }
+
+        #reportOutput h3 {
+            font-size: 17px;
+        }
+
+        #reportOutput p {
+            margin: 10px 0;
+        }
+
+        #reportOutput ul,
+        #reportOutput ol {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+
+        #reportOutput li {
+            margin: 5px 0;
+        }
+
+        #reportOutput table {
+            width: 100%;
+            min-width: 760px;
+            margin: 18px 0;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        #reportOutput th,
+        #reportOutput td {
+            padding: 9px 11px;
+            border: 1px solid #e2e8f0;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        #reportOutput th {
+            background: #f8fafc;
+            color: #334155;
+            font-weight: 700;
+        }
+
+        #reportOutput tr:nth-child(even) td {
+            background: #fcfdff;
+        }
+
+        #reportOutput a {
+            color: #1a73e8;
+            text-decoration: none;
+        }
+
+        #reportOutput a:hover {
+            text-decoration: underline;
+        }
+
+        #reportOutput code {
+            padding: 2px 6px;
+            border-radius: 5px;
+            background: #f1f5f9;
+            color: #be185d;
+            font-size: 13px;
+        }
+
+        #reportOutput pre {
+            margin: 16px 0;
+            padding: 16px 18px;
+            border-radius: 12px;
+            overflow-x: auto;
+            background: #1e293b;
+            color: #e2e8f0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        #reportOutput pre code {
+            padding: 0;
+            background: transparent;
+            color: inherit;
+        }
+
+        #reportOutput blockquote {
+            margin: 15px 0;
+            padding: 12px 17px;
+            border-left: 4px solid #4285f4;
+            border-radius: 0 8px 8px 0;
+            background: #f8faff;
+        }
+
+        .notice {
+            margin-bottom: 16px;
+            padding: 14px 17px;
+            border-left: 5px solid #f5a623;
+            border-radius: 10px;
+            background: #fff8e1;
+            color: #7c5d00;
+            white-space: pre-line;
+        }
+
+        .error-msg {
+            margin: 10px 0;
+            padding: 16px 18px;
+            border-left: 5px solid #d92d20;
+            border-radius: 10px;
+            background: #fee9e7;
+            color: #b42318;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .footer-note {
+            margin: 18px 0 5px;
+            color: #94a3b8;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        @media (max-width: 760px) {
+            body {
+                padding: 18px 12px;
+            }
+
+            .control-card,
+            .result-card {
+                padding: 20px;
+            }
+
+            .mode-toggle {
+                grid-template-columns: 1fr;
+            }
+
+            .row {
+                flex-direction: column;
+            }
+
+            .form-group,
+            .form-group.wide {
+                width: 100%;
+            }
+
+            .btn-generate {
+                width: 100%;
+            }
+
+            .header h1 {
+                font-size: 23px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+
+        <header class="header">
+            <div class="header-icon">⚙️</div>
+            <div>
+                <h1>Metallurgy <span>Intel</span></h1>
+                <div class="sub">
+                    全球金属材料机构与课题组调研器 · 国家概览 → 单位深挖
+                </div>
+            </div>
+        </header>
+
+        <section class="control-card">
+
+            <div class="mode-toggle">
+                <button
+                    type="button"
+                    class="mode-btn active"
+                    id="modeCountryBtn"
+                    onclick="switchMode('country')">
+                    🌍 国家概览
+                    <span class="mode-desc">先建立候选机构池，不展开具体课题组</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="mode-btn"
+                    id="modeSchoolBtn"
+                    onclick="switchMode('school')">
+                    🏛️ 单位详情
+                    <span class="mode-desc">针对单个大学、研究所或国家机构深挖课题组</span>
+                </button>
+            </div>
+
+            <div class="row">
+                <div class="form-group wide">
+                    <label id="inputLabel" for="targetInput">🌍 目标国家 / 地区</label>
+                    <input
+                        type="text"
+                        id="targetInput"
+                        placeholder="例如：德国、法国、瑞士……"
+                        value="德国">
+
+                    <div class="quick-pick" id="quickPick"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="modelSelect">
+                        🤖 可用模型
+                        <span class="model-count" id="modelCount"></span>
+                    </label>
+
+                    <select id="modelSelect" disabled>
+                        <option value="">⏳ 输入 API Key 后加载模型</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="apiKeyInput">🔑 Gemini API Key</label>
+                    <input
+                        type="password"
+                        id="apiKeyInput"
+                        placeholder="请输入 Gemini API Key"
+                        autocomplete="off">
+                </div>
+
+                <button
+                    type="button"
+                    class="btn-generate"
+                    id="generateBtn"
+                    onclick="runResearch()">
+                    <span class="spinner"></span>
+                    <span class="btn-text">🚀 生成报告</span>
+                </button>
+            </div>
+
+            <div class="api-hint" id="statusHint">
+                💡 输入 API Key 后，页面会<strong>自动加载</strong>该项目可调用的模型。
+                本版本不默认启用联网搜索，以降低配额消耗。
+            </div>
+        </section>
+
+        <main class="result-card">
+            <div class="result-placeholder" id="placeholder">
+                <div class="big-icon">🔍</div>
+                <h3 id="placeholderTitle">输入国家名称和 API Key，点击生成</h3>
+                <p>
+                    建议先使用「国家概览」建立机构池，再切换到「单位详情」深挖目标单位。
+                </p>
+            </div>
+
+            <div class="result-content" id="resultContent">
+                <div id="reportOutput"></div>
+            </div>
+        </main>
+
+        <div class="footer-note">
+            API Key 仅存于当前浏览器 Local Storage；不要在公共电脑保存 API Key。
+        </div>
+    </div>
+
+    <script>
+        // =========================================================
+        // 全局状态
+        // =========================================================
+        let currentMode = "country";
+        let discoverTimeout = null;
+
+        const COUNTRY_QUICK_PICKS = [
+            "德国", "法国", "英国", "荷兰", "瑞士",
+            "奥地利", "瑞典", "挪威", "芬兰", "丹麦"
+        ];
+
+        const SCHOOL_QUICK_PICKS = [
+            "RWTH Aachen",
+            "MPI SusMat",
+            "KIT",
+            "HZDR",
+            "TU Delft",
+            "ETH Zurich",
+            "EPFL",
+            "PSI",
+            "University of Birmingham",
+            "Institut Jean Lamour"
+        ];
+
+        // =========================================================
+        // System Prompt
+        // =========================================================
+        const SYSTEM_PROMPT = `
+你是一名严谨的金属材料科研情报分析师，熟悉欧洲大学、国家研究机构、
+应用研究所与大科学装置的材料科研体系。
+
+回答必须使用中文；机构名称、课题组名称和教授姓名使用英文原名。
+不要编造不存在的单位、PI、实验室、职位或研究方向。
+不确定的内容必须明确写“待核实”或“官网待查”。
+
+优先筛选结构金属、物理冶金、扩散、晶界/相界、界面、相变、
+高熵合金、金属薄膜、金属玻璃、金属增材制造、氢脆、腐蚀、
+离子/中子辐照、核材料、极端环境失效、EBSD/TEM/STEM/APT/SIMS等方向。
+
+排除纯陶瓷、纯电池电极、纯半导体、纯生物医学、纯催化、
+纯凝聚态理论以及脱离金属材料问题的泛工程团队。
+        `.trim();
+
+        // =========================================================
+        // 国家概览 Prompt
+        // =========================================================
+function buildCountryOverviewPrompt(countryName) {
+    return `
+请针对【${countryName}】进行"第一阶段：国家级机构与教授摸排"。
+
+目标不是详细分析课题组，而是尽可能建立一个可供后续筛选的"机构 - 关键教授"候选池。
+这一步只需要极简清单，不展开研究方向细节、方法手段或链接。
+
+## 要覆盖的机构类型
+
+请尽量覆盖，不能只列著名大学：
+
+1. 综合大学、理工大学、矿冶大学中与材料、冶金、机械、核工程相关的院系
+2. 国家级研究机构、科学院系统、国家实验室
+3. 应用研究所、工业研究中心
+4. 核能、聚变、辐照相关机构
+5. 金属材料相关的大科学装置或国家级共享平台
+
+## 与我相关的筛选主题（用于判断是否收录，不需要在输出中展开）
+
+- 物理冶金、钢铁、结构金属、相变、析出、再结晶、织构
+- 金属扩散、晶界/相界、界面、缺陷、偏聚
+- 高熵合金、复杂浓合金、金属玻璃、金属间化合物
+- 金属薄膜、纳米金属
+- EBSD、TEM、STEM、APT、FIB、SIMS 等金属微观表征
+- 氢脆、腐蚀、氧化、应力腐蚀
+- 离子辐照、中子辐照、核材料、辐照损伤
+- 高温蠕变、疲劳、断裂
+- 金属增材制造、粉末冶金
+
+## 输出格式（严格遵循）
+
+先用不超过2条项目符号简要说明覆盖边界（例如是否可能遗漏小型机构），然后直接输出总览，格式必须模仿以下极简架构风格，使用 Markdown 代码块（\`\`\`text ... \`\`\`），用缩进表示层级，不使用表格、不使用长句：
+
+\`\`\`text
+[国家名称]
+    [机构名称A]
+        [教授英文名1]    [1-3个极简标签]
+        [教授英文名2]    [1-3个极简标签]
+    [机构名称B]
+        [教授英文名3]    [1-3个极简标签]
+        [教授英文名4]    [1-3个极简标签]
+    [机构名称C]
+        [教授英文名5]    [1-3个极简标签]
+\`\`\`
+
+## 填写规则
+
+1. 每个机构下只列该机构中与我筛选主题相关的关键教授/PI/组长，人数不设上限，按机构实际情况列全，但不要为了凑数塞入无关人员。
+2. 极简标签控制在1-3个，用"；"分隔，例如：氢脆；EBSD 或 辐照；核材料 或 扩散；HEA。不需要完整句子。
+3. 如果某机构目前找不到明确教授姓名，只保留机构名，标注"（待核实具体PI）"。
+4. 不需要城市、机构类型、研究方向详细描述、方法手段、链接、匹配度评级。
+5. 大型国家（德国、法国、英国）尽量覆盖30个以上机构；中小型国家尽量穷尽。
+6. 不要在代码块之外添加总结、评价或额外说明。
+7. 教授姓名一律使用英文原名。
+
+现在开始输出【${countryName}】的机构与教授极简总览。
+    `.trim();
+}
+        
+        // =========================================================
+        // 单位详情 Prompt
+        // =========================================================
+        function buildSchoolDetailPrompt(schoolName) {
+            return `
+请系统摸排【${schoolName}】中与金属材料相关的科研架构，并找出符合筛选要求的课题组、PI和共享表征平台。
+
+## 核心筛选范围
+
+仅保留下列三类方向：
+
+1. 传统冶金与微观组织
+- 金属物理、合金设计、相变、析出、再结晶、织构、晶界、相界
+- 扩散、缺陷、元素偏聚、位错、金属塑性、热机械加工
+- 钢铁、高熵合金、镍基高温合金、钛合金、铝镁合金、锆合金、难熔合金、金属玻璃、金属薄膜
+
+2. 先进微观结构表征
+- 明确以 SEM、EBSD、HR-EBSD、TEM、HRTEM、STEM、APT、FIB、SIMS、XRD、同步辐射或中子技术研究金属微结构、界面、缺陷或力学行为
+
+3. 金属极端环境失效
+- 氢脆、氢扩散、氢陷阱
+- 腐蚀、应力腐蚀、高温氧化、液态金属腐蚀
+- 离子/中子辐照、核材料、聚变材料、辐照缺陷
+- 高温蠕变、疲劳、断裂、结构完整性
+- 金属增材制造中的组织—性能与缺陷问题
+
+允许保留计算模拟组，但必须明确聚焦于金属中的扩散、缺陷、氢脆、辐照、相变、位错、晶界或断裂；并标注“计算模拟”。
+
+## 必须排除
+
+- 纯陶瓷、聚合物、生物材料、药物、纯电池电极、半导体、光伏
+- 与金属材料无关的纯凝聚态理论
+- 没有材料微结构或金属主线的泛机械工程团队
+- 纯加速器、粒子物理团队；但辐照材料和核结构材料可保留
+
+## 输出格式
+
+### 第一部分：极简架构总览
+
+必须使用 Markdown 代码块，按以下风格输出。
+只保留学院/系、二级研究所、实验室/研究点、极简标签和负责人。
+
+\`\`\`text
+[机构名称]    [学院/研究部A]
+        [二级部门/方向]
+            [课题组]    [核心标签]    [负责人]
+    [学院/研究部B]
+        [课题组]    [核心标签]    [负责人]
+    [共享平台]
+        [平台名称]    [TEM/EBSD/APT/离子束等支撑]    [N/A或负责人]
+\`\`\`
+
+### 第二部分：核心团队拆解
+
+只详细展开最匹配的团队；通常列 3–10 个，不要为了凑数量收录弱相关团队。
+
+#### 一、[学院/研究部名称]
+
+- **[课题组英文名]** ｜ **[PI英文名](官方主页链接)**
+  - **核心方向：** 1–2 句话，说明具体金属材料体系、科学问题和应用环境。
+  - **方法手段：** 仅列有明确依据的技术，例如 EBSD、TEM/STEM、APT、FIB、SIMS、离子束、同步辐射、中子、氢环境测试、原位力学、CALPHAD、DFT、MD、相场等。
+  - **与你的交集：** 明确写出与扩散、界面、HEA、薄膜、辐照、极端环境或微观结构表征的对应关系。
+
+#### 二、共享平台与外部设施
+
+- 只列该机构本身拥有或明确依托的 TEM/EBSD/APT、同步辐射、中子、离子束、核材料热室、高压氢环境或金属AM平台。
+- 必须区分“课题组自身设备”与“共享平台可访问”。
+
+## 核查要求
+
+- PI 姓名使用英文原名，并尽量提供官网链接。
+- 如果官方链接无法确认，写“官网待查”，不要伪造 URL。
+- 人员是否仍在职、团队是否真实存在不确定时，必须标注“待核实”。
+- 不要写宣传语言，例如“全球领先”“绝对核心”。
+- 输出中文。
+
+现在开始调研【${schoolName}】。
+            `.trim();
+        }
+
+        // =========================================================
+        // Prompt Dispatcher
+        // =========================================================
+        function buildPromptDispatch(inputValue) {
+            if (currentMode === "country") {
+                return buildCountryOverviewPrompt(inputValue);
+            }
+            return buildSchoolDetailPrompt(inputValue);
+        }
+
+        // =========================================================
+        // 模式切换
+        // =========================================================
+        function switchMode(mode) {
+            currentMode = mode;
+
+            const countryButton = document.getElementById("modeCountryBtn");
+            const schoolButton = document.getElementById("modeSchoolBtn");
+            const label = document.getElementById("inputLabel");
+            const input = document.getElementById("targetInput");
+            const placeholderTitle = document.getElementById("placeholderTitle");
+
+            countryButton.classList.toggle("active", mode === "country");
+            schoolButton.classList.toggle("active", mode === "school");
+
+            if (mode === "country") {
+                label.textContent = "🌍 目标国家 / 地区";
+                input.placeholder = "例如：德国、法国、瑞士……";
+                placeholderTitle.textContent = "输入国家名称和 API Key，点击生成";
+
+                if (SCHOOL_QUICK_PICKS.includes(input.value)) {
+                    input.value = "德国";
+                }
+
+                renderQuickPicks(COUNTRY_QUICK_PICKS);
+            } else {
+                label.textContent = "🏛️ 目标学校 / 机构";
+                input.placeholder = "例如：RWTH Aachen、HZDR、ETH Zurich……";
+                placeholderTitle.textContent = "输入机构名称和 API Key，点击生成";
+
+                if (COUNTRY_QUICK_PICKS.includes(input.value)) {
+                    input.value = "RWTH Aachen";
+                }
+
+                renderQuickPicks(SCHOOL_QUICK_PICKS);
+            }
+
+            localStorage.setItem("metallurgy_intel_mode", currentMode);
+        }
+
+        function renderQuickPicks(items) {
+            const container = document.getElementById("quickPick");
+            container.innerHTML = "";
+
+            items.forEach(item => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.textContent = item;
+                button.addEventListener("click", () => {
+                    document.getElementById("targetInput").value = item;
+                });
+                container.appendChild(button);
+            });
+        }
+
+        // =========================================================
+        // 获取模型列表
+        // =========================================================
+        async function discoverModels(apiKey) {
+            const select = document.getElementById("modelSelect");
+            const countSpan = document.getElementById("modelCount");
+            const hint = document.getElementById("statusHint");
+
+            if (!apiKey || apiKey.trim().length < 10) {
+                select.innerHTML = `<option value="">⚠️ 请输入有效 API Key</option>`;
+                select.disabled = true;
+                countSpan.textContent = "";
+                return;
+            }
+
+            select.innerHTML = `<option value="">⏳ 正在获取模型列表...</option>`;
+            select.disabled = true;
+            countSpan.textContent = "(加载中...)";
+            hint.innerHTML = `🔄 正在加载当前项目可用模型列表...`;
+
+            try {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey.trim())}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const message = errorData?.error?.message || `HTTP ${response.status}`;
+                    throw new Error(message);
+                }
+
+                const data = await response.json();
+
+                const models = (data.models || [])
+                    .filter(model =>
+                        Array.isArray(model.supportedGenerationMethods) &&
+                        model.supportedGenerationMethods.includes("generateContent")
+                    )
+                    .filter(model => {
+                        const name = model.name || "";
+                        return /gemini/i.test(name);
+                    });
+
+                if (models.length === 0) {
+                    throw new Error("未发现支持 generateContent 的 Gemini 模型");
+                }
+
+                // 优先显示 Gemini 3.x，随后 2.5，再按 Pro > Flash > Flash-Lite 排序
+                models.sort((a, b) => {
+                    const score = (model) => {
+                        const name = (model.name || "").toLowerCase();
+
+                        let value = 0;
+
+                        const version = name.match(/gemini-(\d+(?:\.\d+)?)/);
+                        if (version) {
+                            value += parseFloat(version[1]) * 1000;
+                        }
+
+                        if (name.includes("pro")) value += 50;
+                        if (name.includes("flash")) value += 30;
+                        if (name.includes("lite")) value -= 10;
+                        if (name.includes("preview")) value -= 2;
+                        if (name.includes("experimental")) value -= 5;
+
+                        return value;
+                    };
+
+                    return score(b) - score(a);
+                });
+
+                const savedModel = localStorage.getItem("gemini_selected_model");
+
+                select.innerHTML = "";
+
+                models.forEach(model => {
+                    const modelId = model.name.replace("models/", "");
+                    const option = document.createElement("option");
+
+                    option.value = modelId;
+                    option.textContent = `${model.displayName || modelId} (${modelId})`;
+
+                    if (modelId === savedModel) {
+                        option.selected = true;
+                    }
+
+                    select.appendChild(option);
+                });
+
+                select.disabled = false;
+                countSpan.textContent = `(${models.length} 个可用)`;
+
+                hint.innerHTML = `
+                    ✅ 已发现 <strong>${models.length}</strong> 个可用模型。
+                    国家概览使用较低输出上限；单位详情使用适度上限，以减少 429 风险。
+                `;
+
+                if (!select.value && models.length > 0) {
+                    select.selectedIndex = 0;
+                }
+
+                localStorage.setItem("gemini_selected_model", select.value);
+
+            } catch (error) {
+                console.error("模型列表加载失败：", error);
+
+                // 后备列表只用于手动尝试；
+                // 若账户实际无此模型，调用时仍会由API返回明确错误。
+                const fallbackModels = [
+                    "gemini-3.5-flash",
+                    "gemini-3.1-pro-preview",
+                    "gemini-3.1-flash",
+                    "gemini-2.5-flash"
+                ];
+
+                select.innerHTML = "";
+
+                fallbackModels.forEach((modelId, index) => {
+                    const option = document.createElement("option");
+                    option.value = modelId;
+                    option.textContent = `${modelId}（后备名称）`;
+
+                    if (index === 0) {
+                        option.selected = true;
+                    }
+
+                    select.appendChild(option);
+                });
+
+                select.disabled = false;
+                countSpan.textContent = "(后备列表)";
+                hint.innerHTML = `
+                    ⚠️ 无法自动读取模型列表：${escapeHtml(error.message)}。
+                    已显示后备模型名称；请优先确认 AI Studio 中实际可用的模型。
+                `;
+            }
+        }
+
+        // =========================================================
+        // 发送请求
+        // =========================================================
+        async function runResearch() {
+            const inputValue = document.getElementById("targetInput").value.trim();
+            const apiKey = document.getElementById("apiKeyInput").value.trim();
+            const model = document.getElementById("modelSelect").value;
+
+            if (!inputValue) {
+                alert(currentMode === "country"
+                    ? "请填写目标国家或地区。"
+                    : "请填写目标学校或机构。");
+                return;
+            }
+
+            if (!apiKey) {
+                alert("请填写 Gemini API Key。");
+                return;
+            }
+
+            if (!model) {
+                alert("请先等待模型列表加载完成，并选择一个模型。");
+                return;
+            }
+
+            const button = document.getElementById("generateBtn");
+            const placeholder = document.getElementById("placeholder");
+            const resultContent = document.getElementById("resultContent");
+            const outputDiv = document.getElementById("reportOutput");
+
+            button.classList.add("loading");
+            button.disabled = true;
+
+            placeholder.style.display = "none";
+            resultContent.classList.remove("active");
+            outputDiv.innerHTML = "";
+
+            // 国家概览不需要大输出；
+            // 单位详情也刻意控制在 12k，避免不必要地增加配额压力。
+            const maxOutputTokens = currentMode === "country" ? 8192 : 12288;
+
+            const requestBody = {
+                system_instruction: {
+                    parts: [
+                        { text: SYSTEM_PROMPT }
+                    ]
+                },
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: buildPromptDispatch(inputValue) }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    temperature: currentMode === "country" ? 0.2 : 0.3,
+                    topP: 0.9,
+                    maxOutputTokens: maxOutputTokens
+                }
+            };
+
+            try {
+                // 只发送一次请求：
+                // 不使用 google_search；
+                // 不使用失败后的自动二次请求；
+                // 因此不会因自动降级逻辑额外消耗配额。
+                const url =
+                    `https://generativelanguage.googleapis.com/v1beta/models/` +
+                    `${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorCode = errorData?.error?.code || response.status;
+                    const errorMessage =
+                        errorData?.error?.message ||
+                        `HTTP ${response.status}`;
+
+                    throw new Error(`[${errorCode}] ${errorMessage}`);
+                }
+
+                const data = await response.json();
+
+                const candidate = data?.candidates?.[0];
+                const text = candidate?.content?.parts
+                    ?.map(part => part.text || "")
+                    .join("")
+                    .trim();
+
+                const finishReason = candidate?.finishReason || "";
+
+                if (!text) {
+                    throw new Error(
+                        `模型未返回有效文本。finishReason: ${finishReason || "未知"}`
+                    );
+                }
+
+                let notice = "";
+
+                if (finishReason === "MAX_TOKENS") {
+                    notice = `
+                        <div class="notice">
+                            ⚠️ 输出达到设定上限，内容可能在末尾被截断。
+                            国家级清单建议改为按地区分批查询，例如“德国｜北威州”或“法国｜Grand Est”；
+                            单位详情建议缩小为具体学院、研究所或研究主题。
+                        </div>
+                    `;
+                }
+
+                outputDiv.innerHTML = notice + marked.parse(text);
+                resultContent.classList.add("active");
+
+                localStorage.setItem("metallurgy_last_input", inputValue);
+
+            } catch (error) {
+                console.error("请求失败：", error);
+
+                const message = error?.message || String(error);
+
+                if (
+                    message.includes("[429]") ||
+                    message.includes("RESOURCE_EXHAUSTED") ||
+                    message.includes("quota")
+                ) {
+                    outputDiv.innerHTML = `
+                        <div class="error-msg" style="background:#fff8e1;color:#7c5d00;border-left-color:#f5a623;">
+                            ⚠️ 当前 Gemini 项目触发配额限制（429）。
+
+                            这通常不是 API Key 错误，也不代表页面代码损坏。
+                            它可能表示请求频率（RPM）、输入/输出 Token 速率（TPM）
+                            或每日额度（RPD）中的某一项已达到限制。
+
+                            建议：
+                            1. 等待 1–5 分钟后再试，不要连续点击；
+                            2. 优先选用你账户可用的 Gemini Flash 模型；
+                            3. 国家概览不要反复对同一个国家重跑；
+                            4. 大国按区域分批，例如“德国｜北威州”“德国｜萨克森”；
+                            5. 到 Google AI Studio 的 Rate Limit 页面查看当前项目限额。
+                        </div>
+                    `;
+                } else {
+                    outputDiv.innerHTML = `
+                        <div class="error-msg">
+                            ❌ 出错了：${escapeHtml(message)}
+                        </div>
+                    `;
+                }
+
+                resultContent.classList.add("active");
+
+            } finally {
+                button.classList.remove("loading");
+                button.disabled = false;
+            }
+        }
+
+        // =========================================================
+        // 安全转义
+        // =========================================================
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // =========================================================
+        // 事件绑定
+        // =========================================================
+        document.getElementById("apiKeyInput").addEventListener("input", function () {
+            clearTimeout(discoverTimeout);
+
+            const apiKey = this.value.trim();
+
+            if (apiKey.length >= 10) {
+                discoverTimeout = setTimeout(() => {
+                    discoverModels(apiKey);
+                }, 650);
+            }
+
+            if (apiKey) {
+                localStorage.setItem("gemini_api_key", apiKey);
+            }
+        });
+
+        document.getElementById("modelSelect").addEventListener("change", function () {
+            if (this.value) {
+                localStorage.setItem("gemini_selected_model", this.value);
+            }
+        });
+
+        document.getElementById("targetInput").addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+                runResearch();
+            }
+        });
+
+        document.getElementById("apiKeyInput").addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+                runResearch();
+            }
+        });
+
+        // =========================================================
+        // 初始化
+        // =========================================================
+        window.addEventListener("load", function () {
+            const savedMode = localStorage.getItem("metallurgy_intel_mode");
+            const savedInput = localStorage.getItem("metallurgy_last_input");
+            const savedKey = localStorage.getItem("gemini_api_key");
+
+            if (savedMode === "school") {
+                switchMode("school");
+            } else {
+                switchMode("country");
+            }
+
+            if (savedInput) {
+                document.getElementById("targetInput").value = savedInput;
+            }
+
+            if (savedKey) {
+                document.getElementById("apiKeyInput").value = savedKey;
+
+                setTimeout(() => {
+                    discoverModels(savedKey);
+                }, 250);
+            }
+        });
+    </script>
+</body>
+</html>
