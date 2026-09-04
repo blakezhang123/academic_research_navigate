@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Research Navigator</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #f4f6fb;
+            --panel: #ffffff;
+            --text: #172033;
+            --muted: #6b778b;
+            --line: #e4eaf2;
+            --primary: #2c67d8;
+            --primary-soft: #eaf1ff;
+            --assistant: #f6f8fc;
+            --danger: #b42318;
+            --warning: #7a5c00;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                Roboto, "Microsoft YaHei", Arial, sans-serif;
+        }
+
+        .app {
+            width: min(1320px, calc(100% - 32px));
+            min-height: 100vh;
+            margin: 0 auto;
+            padding: 28px 0;
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+        }
+
+        .topbar,
+        .main-panel {
+            border: 1px solid rgba(15, 23, 42, 0.07);
+            border-radius: 18px;
+            background: var(--panel);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.05);
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 20px 24px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            width: 46px;
+            height: 46px;
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto;
+            border-radius: 13px;
+            color: #fff;
+            background: linear-gradient(135deg, #1e3a8a, #2c67d8);
+            font-size: 22px;
+        }
+
+        .brand h1 {
+            font-size: 23px;
+            line-height: 1.15;
+            letter-spacing: -0.4px;
+        }
+
+        .brand h1 span {
+            color: var(--primary);
+        }
+
+        .brand p {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .top-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        button,
+        select,
+        input,
+        textarea {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .btn {
+            min-height: 40px;
+            padding: 9px 13px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: #fff;
+            color: #334155;
+            font-size: 13px;
+            font-weight: 650;
+            transition: 0.18s ease;
+        }
+
+        .btn:hover:not(:disabled) {
+            border-color: #a9bee9;
+            background: #f8fbff;
+        }
+
+        .btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            border-color: #1e4eae;
+            background: #1e4eae;
+        }
+
+        .model-select {
+            width: min(255px, 52vw);
+            min-height: 40px;
+            padding: 8px 10px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            color: #334155;
+            background: #fff;
+            font-size: 13px;
+        }
+
+        .main-panel {
+            min-height: 0;
+            display: grid;
+            grid-template-columns: 292px minmax(0, 1fr);
+            overflow: hidden;
+        }
+
+        .sidebar {
+            padding: 20px;
+            border-right: 1px solid var(--line);
+            background: #fbfcfe;
+            overflow-y: auto;
+        }
+
+        .side-heading {
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.45px;
+            color: #334155;
+            text-transform: uppercase;
+        }
+
+        .side-description {
+            margin-bottom: 16px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .profile-card {
+            margin-bottom: 18px;
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 13px;
+            background: #fff;
+        }
+
+        .profile-card.empty {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .profile-card h3 {
+            margin-bottom: 10px;
+            color: #1e293b;
+            font-size: 14px;
+        }
+
+        .profile-row {
+            margin: 8px 0;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .profile-key {
+            display: block;
+            margin-bottom: 2px;
+            color: #64748b;
+            font-weight: 750;
+        }
+
+        .profile-value {
+            color: #253247;
+            word-break: break-word;
+        }
+
+        .sidebar-actions {
+            display: grid;
+            gap: 9px;
+            margin-bottom: 22px;
+        }
+
+        .quick-actions {
+            display: grid;
+            gap: 8px;
+        }
+
+        .quick-btn {
+            padding: 10px 11px;
+            border: 1px solid #dce5f3;
+            border-radius: 10px;
+            background: #fff;
+            color: #40516b;
+            text-align: left;
+            font-size: 13px;
+            transition: 0.15s ease;
+        }
+
+        .quick-btn:hover {
+            border-color: #8eade9;
+            background: var(--primary-soft);
+            color: #1d4fba;
+        }
+
+        .chat-area {
+            min-width: 0;
+            min-height: 0;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            background: #fff;
+        }
+
+        .messages {
+            min-height: 0;
+            padding: 24px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .message-row {
+            display: flex;
+            gap: 10px;
+            margin: 0 0 19px;
+            align-items: flex-start;
+        }
+
+        .message-row.user {
+            flex-direction: row-reverse;
+        }
+
+        .avatar {
+            width: 31px;
+            height: 31px;
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto;
+            border-radius: 9px;
+            color: #fff;
+            background: #334155;
+            font-size: 14px;
+        }
+
+        .message-row.user .avatar {
+            background: var(--primary);
+        }
+
+        .bubble {
+            max-width: min(900px, 87%);
+            padding: 13px 15px;
+            border: 1px solid #e7ebf1;
+            border-radius: 13px;
+            background: var(--assistant);
+            color: #233047;
+            font-size: 14px;
+            line-height: 1.75;
+            overflow-wrap: anywhere;
+        }
+
+        .message-row.user .bubble {
+            border-color: #cbdafe;
+            background: var(--primary-soft);
+            color: #18356f;
+        }
+
+        .message-row.user .bubble {
+            white-space: pre-wrap;
+        }
+
+        .bubble h1,
+        .bubble h2,
+        .bubble h3,
+        .bubble h4 {
+            margin: 20px 0 9px;
+            line-height: 1.3;
+            color: #16233a;
+        }
+
+        .bubble h1 {
+            font-size: 21px;
+        }
+
+        .bubble h2 {
+            font-size: 18px;
+        }
+
+        .bubble h3 {
+            font-size: 16px;
+        }
+
+        .bubble p {
+            margin: 8px 0;
+        }
+
+        .bubble ul,
+        .bubble ol {
+            margin: 8px 0;
+            padding-left: 22px;
+        }
+
+        .bubble li {
+            margin: 3px 0;
+        }
+
+        .bubble table {
+            width: 100%;
+            min-width: 650px;
+            margin: 12px 0;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .bubble th,
+        .bubble td {
+            padding: 8px 9px;
+            border: 1px solid #dbe3ee;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        .bubble th {
+            background: #eef3fa;
+            color: #334155;
+        }
+
+        .bubble pre {
+            margin: 12px 0;
+            padding: 13px;
+            overflow-x: auto;
+            border-radius: 10px;
+            background: #182235;
+            color: #dbeafe;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .bubble code {
+            padding: 1px 5px;
+            border-radius: 4px;
+            background: #e9eef7;
+            color: #a41952;
+            font-size: 12px;
+        }
+
+        .bubble pre code {
+            padding: 0;
+            background: transparent;
+            color: inherit;
+        }
+
+        .bubble blockquote {
+            margin: 10px 0;
+            padding: 9px 12px;
+            border-left: 4px solid var(--primary);
+            border-radius: 0 8px 8px 0;
+            background: #eef5ff;
+        }
+
+        .bubble a {
+            color: #1d59c6;
+            text-decoration: none;
+        }
+
+        .bubble a:hover {
+            text-decoration: underline;
+        }
+
+        .typing {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .dots {
+            display: inline-flex;
+            gap: 3px;
+        }
+
+        .dots i {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #8fa1bd;
+            animation: bounce 1.05s infinite ease-in-out;
+        }
+
+        .dots i:nth-child(2) {
+            animation-delay: 0.14s;
+        }
+
+        .dots i:nth-child(3) {
+            animation-delay: 0.28s;
+        }
+
+        @keyframes bounce {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.45;
+            }
+
+            30% {
+                transform: translateY(-4px);
+                opacity: 1;
+            }
+        }
+
+        .input-area {
+            padding: 16px 20px 19px;
+            border-top: 1px solid var(--line);
+            background: #fff;
+        }
+
+        .input-wrap {
+            display: flex;
+            gap: 11px;
+            align-items: flex-end;
+        }
+
+        #chatInput {
+            width: 100%;
+            min-height: 52px;
+            max-height: 190px;
+            resize: vertical;
+            padding: 13px 14px;
+            border: 2px solid #e1e8f2;
+            border-radius: 13px;
+            outline: none;
+            color: #26364c;
+            background: #fbfcfe;
+            font-size: 14px;
+            line-height: 1.55;
+            transition: 0.18s ease;
+        }
+
+        #chatInput:focus {
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(44, 103, 216, 0.1);
+        }
+
+        #sendBtn {
+            min-width: 92px;
+            min-height: 52px;
+        }
+
+        .input-note {
+            margin-top: 9px;
+            color: #94a3b8;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .modal-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(15, 23, 42, 0.42);
+        }
+
+        .modal-layer.show {
+            display: flex;
+        }
+
+        .modal {
+            width: min(520px, 100%);
+            padding: 24px;
+            border-radius: 17px;
+            background: #fff;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+        }
+
+        .modal h2 {
+            margin-bottom: 7px;
+            font-size: 19px;
+        }
+
+        .modal p {
+            margin-bottom: 16px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.65;
+        }
+
+        .modal label {
+            display: block;
+            margin: 12px 0 6px;
+            color: #40516b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .modal input {
+            width: 100%;
+            height: 45px;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .modal input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(44, 103, 216, 0.1);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 19px;
+        }
+
+        .toast {
+            position: fixed;
+            z-index: 20;
+            right: 22px;
+            bottom: 22px;
+            display: none;
+            max-width: min(460px, calc(100vw - 44px));
+            padding: 13px 16px;
+            border-radius: 11px;
+            background: #1e293b;
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        .error-box {
+            padding: 12px 14px;
+            border-left: 4px solid #dc2626;
+            border-radius: 8px;
+            background: #fef0ef;
+            color: var(--danger);
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .warning-box {
+            padding: 12px 14px;
+            border-left: 4px solid #e8a317;
+            border-radius: 8px;
+            background: #fff9e8;
+            color: var(--warning);
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        @media (max-width: 980px) {
+            .app {
+                width: min(100% - 20px, 1320px);
+                padding: 10px 0;
+            }
+
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .top-controls {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .main-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .messages {
+                padding: 18px;
+            }
+
+            .input-area {
+                padding: 13px;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .brand h1 {
+                font-size: 20px;
+            }
+
+            .model-select {
+                width: 100%;
+            }
+
+            .top-controls {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .top-controls .model-select {
+                grid-column: span 2;
+            }
+
+            .bubble {
+                max-width: 92%;
+                font-size: 13px;
+            }
+
+            .input-wrap {
+                flex-direction: column;
+            }
+
+            #sendBtn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-icon">⌘</div>
+                <div>
+                    <h1>Academic <span>Research Navigator</span></h1>
+                    <p>通用学术课题组、PI 与科研机构调研对话助手</p>
+                </div>
+            </div>
+
+            <div class="top-controls">
+                <select id="modelSelect" class="model-select" disabled>
+                    <option value="">输入 API Key 后加载模型</option>
+                </select>
+
+                <button class="btn" type="button" onclick="openApiModal()">
+                    🔑 API Key
+                </button>
+
+                <button class="btn" type="button" onclick="exportChat()">
+                    ⬇ 导出对话
+                </button>
+
+                <button class="btn btn-primary" type="button" onclick="newConversation()">
+                    ＋ 新对话
+                </button>
+            </div>
+        </header>
+
+        <section class="main-panel">
+
+            <aside class="sidebar">
+                <div class="side-heading">当前检索画像</div>
+                <p class="side-description">
+                    先通过对话说明专业、主题、排除项和目标地区。
+                    AI 会将其整理为可持续使用的检索画像。
+                </p>
+
+                <div class="profile-card empty" id="profileCard">
+                    尚未建立检索画像。<br>
+                    你可以直接在右侧描述研究背景与目标。
+                </div>
+
+                <div class="sidebar-actions">
+                    <button class="btn" type="button" onclick="requestProfileSummary()">
+                        🧭 更新/查看画像
+                    </button>
+                    <button class="btn" type="button" onclick="clearProfile()">
+                        🗑 清除画像
+                    </button>
+                </div>
+
+                <div class="side-heading">快捷任务</div>
+                <div class="quick-actions">
+                    <button class="quick-btn" type="button"
+                        onclick="useQuickPrompt('请先根据我目前的描述，建立并展示我的检索画像；如果缺少关键信息，只问我一个最重要的问题。')">
+                        建立检索画像
+                    </button>
+
+                    <button class="quick-btn" type="button"
+                        onclick="useQuickPrompt('请按已确认的检索画像，给出【国家/地区】的第一轮机构—关键PI—极简标签总览。请先问我目标国家或地区。')">
+                        查国家/地区
+                    </button>
+
+                    <button class="quick-btn" type="button"
+                        onclick="useQuickPrompt('请按已确认的检索画像，深挖【机构名称】。请先问我需要调查的学校、研究所或国家机构名称。')">
+                        深挖机构
+                    </button>
+
+                    <button class="quick-btn" type="button"
+                        onclick="useQuickPrompt('请按已确认的检索画像，核实【PI姓名】的当前单位、研究主题、近年活跃度、团队网页和潜在博士后相关性。请先问我PI姓名。')">
+                        查 PI
+                    </button>
+
+                    <button class="quick-btn" type="button"
+                        onclick="useQuickPrompt('请把本次对话中已出现的机构、PI和研究标签整理成简洁Markdown表格，并标注待核实项。')">
+                        整理为表格
+                    </button>
+                </div>
+            </aside>
+
+            <main class="chat-area">
+                <div class="messages" id="chatMessages"></div>
+
+                <div class="input-area">
+                    <div class="input-wrap">
+                        <textarea
+                            id="chatInput"
+                            placeholder="例如：我是材料博士，研究金属扩散和离子辐照，想找德国和法国的博士后组，优先TEM/EBSD/SIMS，排除电池、陶瓷和纯理论团队。"
+                            rows="2"></textarea>
+
+                        <button id="sendBtn" class="btn btn-primary" type="button" onclick="sendMessage()">
+                            发送 ↵
+                        </button>
+                    </div>
+
+                    <div class="input-note">
+                        Enter 发送；Shift + Enter 换行。国家级清单建议分国家或地区查询；重点机构再单独深挖，以控制成本与减少遗漏。
+                    </div>
+                </div>
+            </main>
+        </section>
+    </div>
+
+    <!-- API Key 弹窗 -->
+    <div class="modal-layer" id="apiModal">
+        <div class="modal">
+            <h2>Gemini API Key</h2>
+            <p>
+                API Key 仅保存在本浏览器的 Local Storage 中。
+                不要在公共电脑保存，也不要将包含 Key 的网页或浏览器数据上传到公开仓库。
+            </p>
+
+            <label for="apiKeyInput">Gemini API Key</label>
+            <input
+                id="apiKeyInput"
+                type="password"
+                placeholder="粘贴 Gemini API Key"
+                autocomplete="off">
+
+            <div class="modal-actions">
+                <button class="btn" type="button" onclick="closeApiModal()">取消</button>
+                <button class="btn btn-primary" type="button" onclick="saveApiKey()">保存并加载模型</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // =========================================================
+        // 配置：Local Storage Key
+        // =========================================================
+        const STORAGE_KEYS = {
+            apiKey: "arn_gemini_api_key",
+            model: "arn_gemini_model",
+            history: "arn_chat_history",
+            profile: "arn_research_profile"
+        };
+
+        // 保存给 API 的“近期”历史最多多少轮消息。
+        // 太长会持续增加输入token、速度与429风险。
+        const MAX_HISTORY_MESSAGES = 10;
+
+        // =========================================================
+        // 通用系统提示词：不绑定材料、化学、生物或计算机等专业
+        // =========================================================
+        const GENERIC_SYSTEM_PROMPT = `
+你是一名严谨的国际学术科研情报助手。
+你帮助用户寻找高校、国家研究机构、实验室、课题组、PI、博士后机会和科研基础设施。
+
+你的基本工作流：
+
+1. 首先理解用户的研究领域、研究对象、核心科学或工程问题、常用方法技能、
+   明确保留方向、排除方向、目标地区、目标职位和评价优先级。
+2. 初次信息不足时，先提出“一个最关键”的澄清问题，不要一次抛出大量问题。
+3. 收到足够信息后，生成简洁的【检索画像】，包含：
+   - 研究领域
+   - 研究对象/体系
+   - 核心问题
+   - 方法与技能
+   - 保留方向
+   - 排除方向
+   - 地理范围
+   - 目标职位或目标任务
+   - 评价优先级
+   - 待补充信息
+4. 用户说“确认”“开始”“查某国/地区”“找某机构”“深挖某单位”等，
+   应基于已确认的检索画像执行任务。
+5. 用户要求国家或地区层面搜索时，先给“机构 → 关键PI → 极简标签”的概览，
+   而不是一开始展开所有课题组。
+6. 用户指定大学、研究所、PI或课题组时，再进行单位级或PI级详细调研。
+7. 不要为了看起来完整而虚构大学、研究所、实验室、PI、职位、研究项目、设备或链接。
+   信息不确定时，明确标注“待核实”或“官网待查”。
+8. 必须区分：
+   - 课题组自身研究能力
+   - 校级/所级共享平台
+   - 外部可申请的大科学装置或合作设施
+9. 使用中文回答；机构、实验室和人员姓名保留英文原名。
+10. 避免“世界顶尖”“绝对核心”“全球领先”等不可核查的宣传语言。
+11. 对职业与课题组匹配，优先考虑研究主题交集、平台可及性、近期研究活跃度、
+    项目/经费连续性、发表潜力、合作网络和研究独立性空间，而不是只按学校排名。
+
+当用户提供背景时，先尝试建立或更新检索画像。
+当用户给出具体国家/地区时，若已具备画像，使用以下“国家概览”输出规则：
+
+- 先用不超过2条项目符号说明覆盖边界和可能遗漏。
+- 再使用 Markdown 代码块输出：
+\`\`\`text
+[国家/地区]
+    [机构名称]
+        [PI英文名]    [极简标签1；极简标签2]
+        [PI英文名]    [极简标签1；极简标签2]
+    [机构名称]
+        [PI英文名]    [极简标签]
+\`\`\`
+- 一个机构只出现一次；合并同机构相关PI。
+- 不要在第一轮展开详细课题组、设备、长段方向说明或链接。
+- 涵盖大学、国家研究所、应用研究机构、工业研究中心和相关大科学装置。
+- 只列与用户画像匹配的条目。
+- 若具体PI不清楚，写“待核实具体PI”。
+
+当用户要求“深挖某机构”时：
+- 先给极简组织架构代码块；
+- 再仅详细展开3–10个最高匹配团队；
+- 每个团队给出：英文课题组名、PI英文名、核心主题、与用户画像交集、已知方法/平台、待核实事项；
+- 最后单列共享设备或外部设施；
+- 不要混入仅泛相关的团队。
+
+当用户希望“整理表格”时，优先将当前对话已提到的信息整理为Markdown表格，
+并把不确定内容明确标为“待核实”，不要把推测伪装成事实。
+        `.trim();
+
+        // =========================================================
+        // 初始欢迎信息
+        // =========================================================
+        const WELCOME_MESSAGE = `
+你好，我是一个可迁移到不同专业的学术课题组调研助手。
+
+请用自然语言描述你的需求。我会先建立“检索画像”，再协助你逐步完成：
+
+1. **国家/地区概览**：机构 → 关键 PI → 极简方向标签  
+2. **单位深挖**：学院架构、课题组、PI、平台与研究匹配  
+3. **PI 核实**：当前归属、研究主题、近期活跃度与下一步核查项  
+4. **结果整理**：把已找到的机构和人员转为表格
+
+你可以这样开始：
+
+> 我是材料博士，研究金属扩散和离子辐照，想找德国和法国的博士后组，优先 TEM/EBSD/SIMS，排除电池、陶瓷和纯理论团队。
+
+也可以是任何其他学科，例如：
+
+> 我做计算神经科学，想找英国和瑞士的博士后组，偏神经影像、机器学习和临床转化，不想做湿实验。
+        `.trim();
+
+        // =========================================================
+        // 全局状态
+        // =========================================================
+        let chatHistory = [];
+        let researchProfile = null;
+        let isGenerating = false;
+        let typingElement = null;
+
+        // =========================================================
+        // 初始化
+        // =========================================================
+        window.addEventListener("load", () => {
+            configureMarked();
+            restoreState();
+            bindEvents();
+            renderAllMessages();
+            updateProfileCard();
+        });
+
+        function configureMarked() {
+            if (window.marked) {
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true
+                });
+            }
+        }
+
+        function bindEvents() {
+            const input = document.getElementById("chatInput");
+
+            input.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            document.getElementById("apiKeyInput").addEventListener("keydown", (event) => {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    saveApiKey();
+                }
+            });
+
+            document.getElementById("modelSelect").addEventListener("change", (event) => {
+                if (event.target.value) {
+                    localStorage.setItem(STORAGE_KEYS.model, event.target.value);
+                }
+            });
+
+            document.getElementById("apiModal").addEventListener("click", (event) => {
+                if (event.target.id === "apiModal") {
+                    closeApiModal();
+                }
+            });
+        }
+
+        function restoreState() {
+            try {
+                const savedHistory = JSON.parse(
+                    localStorage.getItem(STORAGE_KEYS.history) || "[]"
+                );
+
+                const savedProfile = JSON.parse(
+                    localStorage.getItem(STORAGE_KEYS.profile) || "null"
+                );
+
+                if (Array.isArray(savedHistory) && savedHistory.length > 0) {
+                    chatHistory = savedHistory;
+                } else {
+                    chatHistory = [
+                        {
+                            role: "model",
+                            parts: [{ text: WELCOME_MESSAGE }]
+                        }
+                    ];
+                }
+
+                researchProfile = savedProfile;
+
+                const savedKey = localStorage.getItem(STORAGE_KEYS.apiKey);
+
+                if (savedKey) {
+                    document.getElementById("apiKeyInput").value = savedKey;
+                    setTimeout(() => discoverModels(savedKey), 250);
+                }
+            } catch (error) {
+                console.warn("恢复本地状态失败：", error);
+
+                chatHistory = [
+                    {
+                        role: "model",
+                        parts: [{ text: WELCOME_MESSAGE }]
+                    }
+                ];
+            }
+        }
+
+        function persistState() {
+            localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(chatHistory));
+            localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(researchProfile));
+        }
+
+        // =========================================================
+        // API Key 与模型
+        // =========================================================
+        function openApiModal() {
+            const savedKey = localStorage.getItem(STORAGE_KEYS.apiKey) || "";
+            document.getElementById("apiKeyInput").value = savedKey;
+            document.getElementById("apiModal").classList.add("show");
+            setTimeout(() => document.getElementById("apiKeyInput").focus(), 100);
+        }
+
+        function closeApiModal() {
+            document.getElementById("apiModal").classList.remove("show");
+        }
+
+        async function saveApiKey() {
+            const apiKey = document.getElementById("apiKeyInput").value.trim();
+
+            if (apiKey.length < 10) {
+                showToast("请输入有效的 Gemini API Key。");
+                return;
+            }
+
+            localStorage.setItem(STORAGE_KEYS.apiKey, apiKey);
+            closeApiModal();
+            showToast("API Key 已保存，正在加载模型列表。");
+
+            await discoverModels(apiKey);
+        }
+
+        async function discoverModels(apiKey) {
+            const select = document.getElementById("modelSelect");
+
+            select.disabled = true;
+            select.innerHTML = `<option value="">⏳ 正在加载模型...</option>`;
+
+            try {
+                const endpoint =
+                    `https://generativelanguage.googleapis.com/v1beta/models?key=` +
+                    encodeURIComponent(apiKey);
+
+                const response = await fetch(endpoint, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(
+                        errorData?.error?.message || `HTTP ${response.status}`
+                    );
+                }
+
+                const data = await response.json();
+
+                const availableModels = (data.models || [])
+                    .filter(model =>
+                        Array.isArray(model.supportedGenerationMethods) &&
+                        model.supportedGenerationMethods.includes("generateContent")
+                    )
+                    .filter(model => /gemini/i.test(model.name || ""))
+                    .filter(model => {
+                        const name = (model.name || "").toLowerCase();
+                        return !name.includes("image") &&
+                               !name.includes("tts") &&
+                               !name.includes("live") &&
+                               !name.includes("embedding");
+                    });
+
+                if (!availableModels.length) {
+                    throw new Error("未发现支持 generateContent 的文本 Gemini 模型。");
+                }
+
+                availableModels.sort((a, b) => getModelScore(b) - getModelScore(a));
+
+                const savedModel = localStorage.getItem(STORAGE_KEYS.model);
+
+                select.innerHTML = "";
+
+                availableModels.forEach((model, index) => {
+                    const modelId = (model.name || "").replace("models/", "");
+                    const option = document.createElement("option");
+
+                    option.value = modelId;
+                    option.textContent = `${model.displayName || modelId} (${modelId})`;
+
+                    if (modelId === savedModel || (!savedModel && index === 0)) {
+                        option.selected = true;
+                    }
+
+                    select.appendChild(option);
+                });
+
+                select.disabled = false;
+
+                if (select.value) {
+                    localStorage.setItem(STORAGE_KEYS.model, select.value);
+                }
+
+                showToast(`已加载 ${availableModels.length} 个可用 Gemini 模型。`);
+
+            } catch (error) {
+                console.error("模型列表加载失败：", error);
+
+                // 后备列表仅作为手动尝试；优先使用models.list实际发现的模型。
+                const fallbackModels = [
+                    "gemini-3.5-flash",
+                    "gemini-3.1-pro-preview",
+                    "gemini-3.1-flash",
+                    "gemini-2.5-flash"
+                ];
+
+                select.innerHTML = "";
+
+                fallbackModels.forEach((id, index) => {
+                    const option = document.createElement("option");
+                    option.value = id;
+                    option.textContent = `${id}（后备名称）`;
+                    option.selected = index === 0;
+                    select.appendChild(option);
+                });
+
+                select.disabled = false;
+
+                showToast(
+                    `无法自动读取模型列表：${error.message}。已显示后备模型名称。`
+                );
+            }
+        }
+
+        function getModelScore(model) {
+            const name = (model.name || "").toLowerCase();
+            let score = 0;
+
+            const version = name.match(/gemini-(\d+(?:\.\d+)?)/);
+            if (version) {
+                score += parseFloat(version[1]) * 1000;
+            }
+
+            if (name.includes("pro")) score += 50;
+            if (name.includes("flash")) score += 30;
+            if (name.includes("lite")) score -= 8;
+            if (name.includes("preview")) score -= 2;
+            if (name.includes("experimental")) score -= 4;
+
+            return score;
+        }
+
+        // =========================================================
+        // 对话发送与API调用
+        // =========================================================
+        async function sendMessage(forcedText = null) {
+            if (isGenerating) return;
+
+            const input = document.getElementById("chatInput");
+            const userText = (forcedText ?? input.value).trim();
+
+            if (!userText) return;
+
+            const apiKey = localStorage.getItem(STORAGE_KEYS.apiKey);
+            const model = document.getElementById("modelSelect").value;
+
+            if (!apiKey) {
+                openApiModal();
+                showToast("请先设置 Gemini API Key。");
+                return;
+            }
+
+            if (!model) {
+                showToast("请等待模型加载完成，或重新保存 API Key。");
+                return;
+            }
+
+            chatHistory.push({
+                role: "user",
+                parts: [{ text: userText }]
+            });
+
+            input.value = "";
+            persistState();
+            renderAllMessages();
+
+            isGenerating = true;
+            setSendState();
+            showTyping();
+
+            try {
+                const response = await callGemini(apiKey, model);
+
+                const candidate = response?.candidates?.[0];
+                const responseText = candidate?.content?.parts
+                    ?.map(part => part.text || "")
+                    .join("")
+                    .trim();
+
+                const finishReason = candidate?.finishReason || "";
+
+                if (!responseText) {
+                    throw new Error(
+                        `模型没有返回可用文本。finishReason: ${finishReason || "未知"}`
+                    );
+                }
+
+                let finalText = responseText;
+
+                if (finishReason === "MAX_TOKENS") {
+                    finalText += `
+
+> ⚠️ 本次输出可能被截断。请将任务拆小：例如先按地区列机构，再单独深挖某个机构。`;
+                }
+
+                chatHistory.push({
+                    role: "model",
+                    parts: [{ text: finalText }]
+                });
+
+                maybeUpdateResearchProfile(finalText);
+                persistState();
+
+            } catch (error) {
+                console.error("Gemini调用失败：", error);
+
+                chatHistory.push({
+                    role: "model",
+                    parts: [{ text: buildErrorMessage(error) }]
+                });
+
+                persistState();
+
+            } finally {
+                isGenerating = false;
+                hideTyping();
+                setSendState();
+                renderAllMessages();
+            }
+        }
+
+        async function callGemini(apiKey, model) {
+            const recentHistory = buildRecentHistory();
+
+            const requestBody = {
+                system_instruction: {
+                    parts: [{ text: buildSystemPromptWithProfile() }]
+                },
+                contents: recentHistory,
+                generationConfig: {
+                    temperature: 0.25,
+                    topP: 0.9,
+                    maxOutputTokens: chooseOutputTokenLimit()
+                }
+            };
+
+            const endpoint =
+                `https://generativelanguage.googleapis.com/v1beta/models/` +
+                `${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const code = errorData?.error?.code || response.status;
+                const message =
+                    errorData?.error?.message ||
+                    `HTTP ${response.status}`;
+
+                throw new Error(`[${code}] ${message}`);
+            }
+
+            return response.json();
+        }
+
+        function buildSystemPromptWithProfile() {
+            if (!researchProfile) {
+                return GENERIC_SYSTEM_PROMPT;
+            }
+
+            return `
+${GENERIC_SYSTEM_PROMPT}
+
+以下是当前已保存的用户检索画像。你必须优先遵循它；
+只有当用户明确修改时才更新其中内容：
+
+${formatProfileForPrompt(researchProfile)}
+            `.trim();
+        }
+
+        function buildRecentHistory() {
+            const selected = chatHistory.slice(-MAX_HISTORY_MESSAGES);
+
+            // REST多轮请求不应以model消息开头。
+            while (selected.length > 0 && selected[0].role !== "user") {
+                selected.shift();
+            }
+
+            return selected.length > 0
+                ? selected
+                : [{
+                    role: "user",
+                    parts: [{
+                        text: "请开始协助我建立学术课题组检索画像。"
+                    }]
+                }];
+        }
+
+        function chooseOutputTokenLimit() {
+            const lastUserMessage = [...chatHistory]
+                .reverse()
+                .find(item => item.role === "user")
+                ?.parts?.[0]?.text
+                ?.toLowerCase() || "";
+
+            const detailIndicators = [
+                "深挖", "详细", "详情", "课题组", "实验室",
+                "pi", "教授", "研究所", "institution"
+            ];
+
+            const isDetailTask = detailIndicators.some(word =>
+                lastUserMessage.includes(word)
+            );
+
+            return isDetailTask ? 12288 : 8192;
+        }
+
+        // =========================================================
+        // 检索画像处理
+        // =========================================================
+        function requestProfileSummary() {
+            useQuickPrompt(
+                "请根据目前对话，更新并展示我的【检索画像】。若有缺失信息，只在最后提出一个最重要的澄清问题。"
+            );
+        }
+
+        function clearProfile() {
+            researchProfile = null;
+            localStorage.removeItem(STORAGE_KEYS.profile);
+            updateProfileCard();
+            showToast("检索画像已清除。对话历史仍被保留。");
+        }
+
+        function maybeUpdateResearchProfile(text) {
+            const profile = parseProfileFromText(text);
+
+            if (profile && Object.keys(profile).length >= 3) {
+                researchProfile = {
+                    ...(researchProfile || {}),
+                    ...profile,
+                    updatedAt: new Date().toLocaleString("zh-CN")
+                };
+
+                updateProfileCard();
+            }
+        }
+
+        function parseProfileFromText(text) {
+            if (!text.includes("检索画像")) return null;
+
+            const profile = {};
+            const mapping = {
+                "研究领域": "researchField",
+                "研究对象": "researchObject",
+                "研究对象/体系": "researchObject",
+                "核心问题": "coreQuestions",
+                "方法与技能": "methods",
+                "方法/技能": "methods",
+                "保留方向": "include",
+                "排除方向": "exclude",
+                "地理范围": "geography",
+                "目标职位": "goal",
+                "目标职位或目标任务": "goal",
+                "评价优先级": "priorities",
+                "待补充信息": "missing"
+            };
+
+            const lines = text.split("\n");
+
+            for (const rawLine of lines) {
+                const line = rawLine
+                    .replace(/^[-*>\s]+/, "")
+                    .replace(/\*\*/g, "")
+                    .trim();
+
+                const match = line.match(/^([^：:]+)[：:]\s*(.+)$/);
+
+                if (!match) continue;
+
+                const key = match[1].trim();
+                const value = match[2].trim();
+
+                if (mapping[key] && value) {
+                    profile[mapping[key]] = value;
+                }
+            }
+
+            return Object.keys(profile).length ? profile : null;
+        }
+
+        function formatProfileForPrompt(profile) {
+            const labels = {
+                researchField: "研究领域",
+                researchObject: "研究对象/体系",
+                coreQuestions: "核心问题",
+                methods: "方法与技能",
+                include: "保留方向",
+                exclude: "排除方向",
+                geography: "地理范围",
+                goal: "目标职位/任务",
+                priorities: "评价优先级",
+                missing: "待补充信息"
+            };
+
+            return Object.entries(labels)
+                .filter(([key]) => profile[key])
+                .map(([key, label]) => `- ${label}：${profile[key]}`)
+                .join("\n");
+        }
+
+        function updateProfileCard() {
+            const card = document.getElementById("profileCard");
+
+            if (!researchProfile) {
+                card.className = "profile-card empty";
+                card.innerHTML = `
+                    尚未建立检索画像。<br>
+                    你可以直接在右侧描述研究背景与目标。
+                `;
+                return;
+            }
+
+            const rows = [
+                ["研究领域", researchProfile.researchField],
+                ["研究对象", researchProfile.researchObject],
+                ["核心问题", researchProfile.coreQuestions],
+                ["方法/技能", researchProfile.methods],
+                ["保留方向", researchProfile.include],
+                ["排除方向", researchProfile.exclude],
+                ["地理范围", researchProfile.geography],
+                ["目标", researchProfile.goal],
+                ["优先级", researchProfile.priorities]
+            ].filter(([, value]) => value);
+
+            card.className = "profile-card";
+            card.innerHTML = `
+                <h3>已保存画像</h3>
+                ${rows.map(([label, value]) => `
+                    <div class="profile-row">
+                        <span class="profile-key">${escapeHtml(label)}</span>
+                        <span class="profile-value">${escapeHtml(value)}</span>
+                    </div>
+                `).join("")}
+            `;
+        }
+
+        // =========================================================
+        // 聊天渲染
+        // =========================================================
+        function renderAllMessages() {
+            const container = document.getElementById("chatMessages");
+            container.innerHTML = "";
+
+            chatHistory.forEach(message => {
+                const text = message.parts?.map(part => part.text || "").join("").trim();
+                if (!text) return;
+
+                container.appendChild(createMessageElement(message.role, text));
+            });
+
+            if (typingElement) {
+                container.appendChild(typingElement);
+            }
+
+            scrollToBottom();
+        }
+
+        function createMessageElement(role, text) {
+            const row = document.createElement("div");
+            row.className = `message-row ${role === "user" ? "user" : "assistant"}`;
+
+            const avatar = document.createElement("div");
+            avatar.className = "avatar";
+            avatar.textContent = role === "user" ? "你" : "AI";
+
+            const bubble = document.createElement("div");
+            bubble.className = "bubble";
+
+            if (role === "user") {
+                bubble.textContent = text;
+            } else {
+                bubble.innerHTML = marked.parse(text);
+            }
+
+            row.appendChild(avatar);
+            row.appendChild(bubble);
+
+            return row;
+        }
+
+        function showTyping() {
+            typingElement = document.createElement("div");
+            typingElement.className = "message-row assistant";
+            typingElement.innerHTML = `
+                <div class="avatar">AI</div>
+                <div class="bubble">
+                    <span class="typing">
+                        正在分析
+                        <span class="dots"><i></i><i></i><i></i></span>
+                    </span>
+                </div>
+            `;
+
+            document.getElementById("chatMessages").appendChild(typingElement);
+            scrollToBottom();
+        }
+
+        function hideTyping() {
+            if (typingElement) {
+                typingElement.remove();
+                typingElement = null;
+            }
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById("chatMessages");
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function setSendState() {
+            const button = document.getElementById("sendBtn");
+            const input = document.getElementById("chatInput");
+
+            button.disabled = isGenerating;
+            input.disabled = isGenerating;
+
+            button.textContent = isGenerating ? "生成中…" : "发送 ↵";
+        }
+
+        // =========================================================
+        // 快捷操作、导出与新会话
+        // =========================================================
+        function useQuickPrompt(text) {
+            if (isGenerating) return;
+
+            const input = document.getElementById("chatInput");
+            input.value = text;
+            input.focus();
+        }
+
+        function newConversation() {
+            const confirmed = window.confirm(
+                "确定新建对话吗？这会清除当前对话历史和检索画像，但不会删除 API Key。"
+            );
+
+            if (!confirmed) return;
+
+            chatHistory = [
+                {
+                    role: "model",
+                    parts: [{ text: WELCOME_MESSAGE }]
+                }
+            ];
+
+            researchProfile = null;
+
+            localStorage.removeItem(STORAGE_KEYS.history);
+            localStorage.removeItem(STORAGE_KEYS.profile);
+
+            persistState();
+            renderAllMessages();
+            updateProfileCard();
+
+            showToast("已新建对话。");
+        }
+
+        function exportChat() {
+            const timestamp = new Date()
+                .toISOString()
+                .replace(/[:.]/g, "-");
+
+            let markdown = `# Academic Research Navigator 对话导出\n\n`;
+            markdown += `导出时间：${new Date().toLocaleString("zh-CN")}\n\n`;
+
+            if (researchProfile) {
+                markdown += `## 当前检索画像\n\n`;
+                markdown += `${formatProfileForPrompt(researchProfile)}\n\n`;
+            }
+
+            markdown += `## 对话记录\n\n`;
+
+            chatHistory.forEach(message => {
+                const text = message.parts?.map(part => part.text || "").join("").trim();
+                if (!text) return;
+
+                const title = message.role === "user" ? "用户" : "AI";
+                markdown += `### ${title}\n\n${text}\n\n`;
+            });
+
+            const blob = new Blob([markdown], {
+                type: "text/markdown;charset=utf-8"
+            });
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+
+            link.href = url;
+            link.download = `academic-research-chat-${timestamp}.md`;
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            URL.revokeObjectURL(url);
+
+            showToast("对话已导出为 Markdown 文件。");
+        }
+
+        // =========================================================
+        // 错误与提示
+        // =========================================================
+        function buildErrorMessage(error) {
+            const message = error?.message || String(error);
+
+            if (
+                message.includes("[429]") ||
+                message.includes("RESOURCE_EXHAUSTED") ||
+                message.toLowerCase().includes("quota")
+            ) {
+                return `
+<div class="warning-box">
+⚠️ 当前 Gemini 项目触发配额限制（429）。
+
+这通常不表示 API Key 无效，也不一定是网页代码错误。可能达到请求频率、输入/输出Token速率或每日额度限制。
+
+建议：
+1. 停止连续发送，等待 1–5 分钟；
+2. 优先使用 Flash 模型进行国家级初筛；
+3. 将大任务拆分，例如“德国｜北威州”而不是一次性要求整个德国所有课题组；
+4. 避免把同一个国家或机构反复重跑；
+5. 在 Google AI Studio 的 Rate Limit 页面检查当前项目限额。
+</div>
+                `.trim();
+            }
+
+            return `
+<div class="error-box">
+❌ 请求失败：${escapeHtml(message)}
+
+请检查：
+- API Key 是否有效；
+- 当前模型是否在该项目可用；
+- 网络连接；
+- 模型名称是否仍有效。
+</div>
+            `.trim();
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.classList.add("show");
+
+            clearTimeout(showToast.timer);
+
+            showToast.timer = setTimeout(() => {
+                toast.classList.remove("show");
+            }, 4200);
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
