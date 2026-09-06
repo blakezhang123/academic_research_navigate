@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PI Intel · 学术研究者核查器</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #f4f6fb; --panel: #ffffff; --text: #172033; --muted: #6b778b;
+      --line: #e4eaf2; --primary: #2c67d8; --primary-soft: #eaf1ff;
+      --assistant: #f6f8fc; --danger: #b42318; --warning: #7a5c00;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text); background: var(--bg);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", Arial, sans-serif;
+    }
+    .app { width: min(1220px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 46px; }
+    .topbar, .search-card, .report-card, .candidates-card { 
+      border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 18px; background: var(--panel);
+      box-shadow: 0 8px 32px rgba(15, 23, 42, 0.05);
+    }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 22px; margin-bottom: 20px; }
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .brand-icon { width: 44px; height: 44px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 13px; color: #fff; background: linear-gradient(135deg, #1e3a8a, #2c67d8); font-size: 21px; }
+    .brand h1 { margin: 0; font-size: 23px; letter-spacing: -0.4px; }
+    .brand h1 span { color: var(--primary); }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .top-controls { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 9px; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .btn { min-height: 40px; padding: 9px 13px; border: 1px solid var(--line); border-radius: 10px; color: #334155; background: #fff; font-size: 13px; font-weight: 650; transition: 0.18s ease; }
+    .btn:hover:not(:disabled) { border-color: #a9bee9; background: #f8fbff; }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-primary { color: #fff; border-color: var(--primary); background: var(--primary); }
+    .btn-primary:hover:not(:disabled) { border-color: #1e4eae; background: #1e4eae; }
+    .model-select { width: min(280px, 50vw); min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; color: #334155; background: #fff; font-size: 13px; }
+    .search-card { padding: 24px; margin-bottom: 20px; }
+    .section-title { display: flex; align-items: center; gap: 9px; margin: 0 0 6px; font-size: 19px; }
+    .section-desc { margin: 0 0 20px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px 18px; }
+    .field.full { grid-column: 1 / -1; }
+    label { display: block; margin: 0 0 7px; color: #40516b; font-size: 13px; font-weight: 750; }
+    .required { color: #c2410c; }
+    input { width: 100%; height: 46px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; outline: none; color: #26364c; background: #fbfcfe; font-size: 14px; transition: 0.18s ease; }
+    input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(44, 103, 216, 0.10); }
+    .field-note { margin-top: 6px; color: #94a3b8; font-size: 11px; line-height: 1.45; }
+    .action-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 22px; padding-top: 19px; border-top: 1px solid var(--line); }
+    .action-note { max-width: 660px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .run-btn { min-width: 132px; min-height: 46px; font-size: 14px; }
+
+    .candidates-card { padding: 22px 24px; margin-bottom: 20px; display: none; }
+    .candidates-card.show { display: block; }
+    .candidate-list { display: grid; gap: 10px; margin-top: 14px; }
+    .candidate-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 14px;
+      padding: 13px 15px; border: 1.5px solid var(--line); border-radius: 12px; background: #fbfcfe;
+      cursor: pointer; transition: 0.15s ease;
+    }
+    .candidate-item:hover { border-color: var(--primary); background: var(--primary-soft); }
+    .candidate-item.selected { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 3px rgba(44,103,216,0.12); }
+    .candidate-main { min-width: 0; }
+    .candidate-name { font-weight: 750; font-size: 14.5px; color: #16233a; }
+    .candidate-meta { margin-top: 4px; font-size: 12.5px; color: #55627a; line-height: 1.6; }
+    .candidate-meta b { color: #33507a; }
+    .candidate-pick-btn { flex: 0 0 auto; min-width: 90px; }
+    .step-badge {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+      border-radius: 999px; background: var(--primary-soft); color: #1d4fba;
+      font-size: 12px; font-weight: 700; margin-bottom: 10px;
+    }
+
+    .report-card { min-height: 260px; overflow: hidden; }
+    .report-head { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 16px 21px; border-bottom: 1px solid var(--line); background: #fbfcfe; }
+    .report-head h2 { margin: 0; font-size: 16px; }
+    .status { color: var(--muted); font-size: 12px; }
+    .report-body { padding: 22px 24px 28px; color: #233047; font-size: 14px; line-height: 1.75; overflow-wrap: anywhere; }
+    .empty-report { padding: 35px 12px; color: var(--muted); text-align: center; line-height: 1.8; }
+    .report-body h1, .report-body h2, .report-body h3, .report-body h4 { margin: 22px 0 9px; color: #16233a; line-height: 1.32; }
+    .report-body h1 { font-size: 22px; } .report-body h2 { font-size: 18px; } .report-body h3 { font-size: 16px; }
+    .report-body h1:first-child, .report-body h2:first-child, .report-body h3:first-child { margin-top: 0; }
+    .report-body p { margin: 8px 0; }
+    .report-body ul, .report-body ol { margin: 8px 0; padding-left: 22px; }
+    .report-body li { margin: 3px 0; }
+    .report-body table { width: 100%; min-width: 710px; margin: 12px 0; border-collapse: collapse; font-size: 12px; }
+    .report-body th, .report-body td { padding: 8px 9px; border: 1px solid #dbe3ee; vertical-align: top; text-align: left; }
+    .report-body th { color: #334155; background: #eef3fa; }
+    .report-body a { color: #1d59c6; text-decoration: none; }
+    .report-body a:hover { text-decoration: underline; }
+
+    .data-panel { margin: 0 0 20px; padding: 14px 16px; border: 1px solid #d8e6ff; border-radius: 12px; background: #f3f8ff; font-size: 12.5px; color: #33507a; line-height: 1.6; }
+    .data-panel strong { color: #1d3f8f; }
+
+    .quick-summary {
+      padding: 14px 16px; border-radius: 12px;
+      background: #f3f8ff; border: 1px solid #d8e6ff;
+      color: #233047; font-size: 14.5px; line-height: 1.85;
+    }
+    .highlight-list { display: grid; gap: 10px; margin-top: 10px; }
+    .highlight-paper {
+      padding: 12px 14px; border: 1px solid var(--line); border-radius: 11px;
+      background: #fffdf5;
+    }
+    .highlight-paper .highlight-venue {
+      font-size: 12px; font-weight: 750; color: #92640a; margin-bottom: 4px;
+    }
+    .top-tier-tag {
+      display: inline-block; padding: 1px 7px; border-radius: 999px;
+      background: #ffdca8; color: #7a4a00; font-size: 10.5px; font-weight: 750;
+      margin-left: 4px;
+    }
+    .highlight-paper .highlight-title { font-size: 13.5px; color: #16233a; line-height: 1.5; }
+    .highlight-paper .highlight-title a { color: #1d59c6; text-decoration: none; }
+    .highlight-paper .highlight-title a:hover { text-decoration: underline; }
+    .highlight-paper .highlight-meta { margin-top: 4px; font-size: 11.5px; color: #8a95a8; }
+    .highlight-empty { padding: 12px 14px; color: var(--muted); font-size: 13px; border: 1px dashed var(--line); border-radius: 10px; }
+
+
+    .chart-wrap { margin: 18px 0 26px; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: #fbfcfe; }
+    .chart-wrap h3 { margin: 0 0 4px; font-size: 15px; color: #16233a; }
+    .chart-wrap p { margin: 0 0 14px; font-size: 12px; color: var(--muted); }
+    .chart-canvas-box { position: relative; height: 380px; }
+
+    .typing { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 13px; }
+    .dots { display: inline-flex; gap: 3px; }
+    .dots i { width: 5px; height: 5px; border-radius: 50%; background: #8fa1bd; animation: bounce 1.05s infinite ease-in-out; }
+    .dots i:nth-child(2) { animation-delay: 0.14s; } .dots i:nth-child(3) { animation-delay: 0.28s; }
+    @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.45; } 30% { transform: translateY(-4px); opacity: 1; } }
+
+    .modal-layer { position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(15, 23, 42, 0.42); }
+    .modal-layer.show { display: flex; }
+    .modal { width: min(520px, 100%); padding: 24px; border-radius: 17px; background: #fff; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25); }
+    .modal h2 { margin: 0 0 7px; font-size: 19px; }
+    .modal p { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.65; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 19px; }
+
+    .toast { position: fixed; z-index: 30; right: 22px; bottom: 22px; display: none; max-width: min(460px, calc(100vw - 44px)); padding: 13px 16px; border-radius: 11px; color: #fff; background: #1e293b; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25); font-size: 13px; line-height: 1.5; }
+    .toast.show { display: block; }
+    .error-box { padding: 12px 14px; border-left: 4px solid #dc2626; border-radius: 8px; color: var(--danger); background: #fef0ef; line-height: 1.65; white-space: pre-wrap; }
+    .warning-box { padding: 12px 14px; border-left: 4px solid #e8a317; border-radius: 8px; color: var(--warning); background: #fff9e8; line-height: 1.65; white-space: pre-wrap; }
+
+    @media (max-width: 800px) {
+      .app { width: min(100% - 20px, 1220px); padding-top: 10px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .top-controls { width: 100%; justify-content: flex-start; }
+      .field-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      .action-row { align-items: stretch; flex-direction: column; }
+      .run-btn { width: 100%; }
+      .candidate-item { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon">🔎</div>
+        <div>
+          <h1>PI <span>Intel</span></h1>
+          <p>两步核查：先确认身份，再统计真实论文分布</p>
+        </div>
+      </div>
+      <div class="top-controls">
+        <select id="modelSelect" class="model-select" disabled>
+          <option value="">请先配置 API Key</option>
+        </select>
+        <button class="btn" type="button" onclick="openApiModal()">🔑 API Key</button>
+        <button class="btn" type="button" onclick="exportReport()">导出报告</button>
+        <button class="btn btn-primary" type="button" onclick="resetAll()">新建核查</button>
+      </div>
+    </header>
+
+    <!-- 第一步：姓名搜索 -->
+    <section class="search-card">
+      <span class="step-badge">第一步 · 身份匹配</span>
+      <h2 class="section-title">👤 搜索研究者</h2>
+      <p class="section-desc">
+        输入姓名（可选补充机构线索缩小范围），系统会从 OpenAlex 拉取所有同名候选人，
+        显示 ORCID、机构、论文数供你选择确认，避免张冠李戴。
+      </p>
+
+      <div class="field-grid">
+        <div class="field">
+          <label for="piName">研究者姓名 <span class="required">*</span></label>
+          <input id="piName" type="text" placeholder="例如：Malik Wagih" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="piAffiliation">机构线索（可选，用于排序辅助）</label>
+          <input id="piAffiliation" type="text" placeholder="例如：Rochester" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="action-row">
+        <div class="action-note">
+          点击"搜索候选人"后，下方会列出 OpenAlex 中匹配到的所有同名研究者，
+          请核对 ORCID 与机构后再确认选择。
+        </div>
+        <button id="searchBtn" class="btn btn-primary run-btn" type="button" onclick="searchCandidates()">
+          🔍 搜索候选人
+        </button>
+      </div>
+    </section>
+
+    <!-- 候选人列表 -->
+    <section id="candidatesCard" class="candidates-card">
+      <span class="step-badge">请选择正确的人</span>
+      <div id="candidateList" class="candidate-list"></div>
+    </section>
+
+    <!-- 第二步：报告 + 直方图 -->
+    <section class="report-card">
+      <div class="report-head">
+        <h2>核查报告与论文分布</h2>
+        <span id="reportStatus" class="status">等待选择研究者</span>
+      </div>
+      <div id="reportBody" class="report-body">
+        <div class="empty-report">
+          先在上方搜索并选择正确的研究者，系统会拉取其全部论文并生成期刊分布直方图与 AI 核查报告。
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-layer" id="apiModal">
+    <div class="modal">
+      <h2>Gemini API Key</h2>
+      <p>API Key 仅保存于当前浏览器的 Local Storage。</p>
+      <label for="apiKeyInput">Gemini API Key</label>
+      <input id="apiKeyInput" type="password" placeholder="粘贴 Gemini API Key" autocomplete="off">
+      <div class="modal-actions">
+        <button class="btn" type="button" onclick="closeApiModal()">取消</button>
+        <button class="btn btn-primary" type="button" onclick="saveApiKey()">保存并加载模型</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const STORAGE_KEYS = {
+      apiKey: "pi_intel_gemini_api_key",
+      model: "pi_intel_gemini_model"
+    };
+
+    let isBusy = false;
+    let currentCandidates = [];
+    let selectedAuthor = null;
+    let allWorks = [];
+    let venueChart = null;
+    let latestReportMarkdown = "";
+
+    const PI_SYSTEM_PROMPT = `
+你是"PI Intel"，一个严谨的学术研究者核查助手。用户会给你一份已经通过 OpenAlex
+真实数据库确认身份的研究者信息，以及其全部论文列表和按期刊统计的频率分布。
+
+规则：
+1. 只能使用用户提供的数据作总结和分析，不得编造任何论文、期刊、机构或数字。
+2. 禁止编造 ORCID、当前职位或项目信息；这些不在你的数据范围内，写"未在本次数据中提供"。
+3. 根据论文的期刊分布、年份分布，客观评估该研究者的研究方向集中度、近年活跃度趋势。
+4. 输出中文，期刊名、论文标题保留原文。
+5. 语言直接、客观，不要写空洞的赞美或套话。
+`.trim();
+
+    window.addEventListener("load", () => {
+      configureMarked();
+      restoreApiKey();
+      bindEvents();
+    });
+
+    function configureMarked() {
+      if (window.marked) marked.setOptions({ breaks: true, gfm: true });
+    }
+
+    function bindEvents() {
+      document.getElementById("piName").addEventListener("keydown", e => {
+        if (e.key === "Enter") { e.preventDefault(); searchCandidates(); }
+      });
+      document.getElementById("apiKeyInput").addEventListener("keydown", e => {
+        if (e.key === "Enter") { e.preventDefault(); saveApiKey(); }
+      });
+      document.getElementById("modelSelect").addEventListener("change", e => {
+        if (e.target.value) localStorage.setItem(STORAGE_KEYS.model, e.target.value);
+      });
+      document.getElementById("apiModal").addEventListener("click", e => {
+        if (e.target.id === "apiModal") closeApiModal();
+      });
+    }
+
+    function restoreApiKey() {
+      const savedKey = localStorage.getItem(STORAGE_KEYS.apiKey);
+      if (savedKey) {
+        document.getElementById("apiKeyInput").value = savedKey;
+        setTimeout(() => discoverModels(savedKey), 250);
+      }
+    }
+
+    function openApiModal() {
+      const savedKey = localStorage.getItem(STORAGE_KEYS.apiKey);
+      if (savedKey) document.getElementById("apiKeyInput").value = savedKey;
+      document.getElementById("apiModal").classList.add("show");
+      setTimeout(() => document.getElementById("apiKeyInput").focus(), 100);
+    }
+    function closeApiModal() { document.getElementById("apiModal").classList.remove("show"); }
+
+    async function saveApiKey() {
+      const apiKey = document.getElementById("apiKeyInput").value.trim();
+      if (apiKey.length < 10) { showToast("Gemini API Key 看起来无效。"); return; }
+      localStorage.setItem(STORAGE_KEYS.apiKey, apiKey);
+      closeApiModal();
+      showToast("API Key 已保存，正在读取可用模型……");
+      await discoverModels(apiKey);
+    }
+
+    async function discoverModels(apiKey) {
+      const select = document.getElementById("modelSelect");
+      select.disabled = true;
+      select.innerHTML = `<option value="">正在加载模型……</option>`;
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`;
+        const response = await fetch(endpoint);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData?.error?.message || `HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        const availableModels = (data.models || [])
+          .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes("generateContent"))
+          .filter(m => /gemini/i.test(m.name))
+          .filter(m => {
+            const n = m.name.toLowerCase();
+            return !n.includes("image") && !n.includes("tts") && !n.includes("live") && !n.includes("embedding");
+          })
+          .sort((a, b) => getModelScore(b) - getModelScore(a));
+
+        if (!availableModels.length) throw new Error("未发现支持 generateContent 的 Gemini 模型。");
+
+        const savedModel = localStorage.getItem(STORAGE_KEYS.model);
+        select.innerHTML = "";
+        availableModels.forEach((model, index) => {
+          const modelId = model.name.replace(/^models\//, "");
+          const option = document.createElement("option");
+          option.value = modelId;
+          option.textContent = `${model.displayName || modelId} (${modelId})`;
+          if (modelId === savedModel || (!savedModel && index === 0)) option.selected = true;
+          select.appendChild(option);
+        });
+        select.disabled = false;
+        if (select.value) localStorage.setItem(STORAGE_KEYS.model, select.value);
+        showToast(`已加载 ${availableModels.length} 个可用 Gemini 模型。`);
+      } catch (error) {
+        console.error(error);
+        const fallback = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"];
+        select.innerHTML = "";
+        fallback.forEach((id, i) => {
+          const option = document.createElement("option");
+          option.value = id; option.textContent = id; option.selected = i === 0;
+          select.appendChild(option);
+        });
+        select.disabled = false;
+        showToast(`模型自动发现失败：${error.message}`);
+      }
+    }
+
+    function getModelScore(model) {
+      const name = String(model.name || "").toLowerCase();
+      let score = 0;
+      const version = name.match(/gemini-([\d.]+)/);
+      if (version) score += parseFloat(version[1]) * 1000;
+      if (name.includes("pro")) score += 50;
+      if (name.includes("flash")) score += 30;
+      if (name.includes("lite")) score -= 8;
+      if (name.includes("preview")) score -= 2;
+      if (name.includes("experimental")) score -= 4;
+      return score;
+    }
+
+    // ========== 第一步：搜索候选人 ==========
+    async function searchCandidates() {
+      if (isBusy) return;
+      const name = document.getElementById("piName").value.trim();
+      const affiliation = document.getElementById("piAffiliation").value.trim();
+
+      if (!name) { showToast("请输入研究者姓名。"); return; }
+
+      isBusy = true;
+      const btn = document.getElementById("searchBtn");
+      btn.disabled = true;
+      btn.textContent = "搜索中……";
+      setReportStatus("正在从 OpenAlex 搜索候选人……");
+
+      try {
+        const url = `https://api.openalex.org/authors?search=${encodeURIComponent(name)}&per_page=25`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`OpenAlex 请求失败：HTTP ${response.status}`);
+        const data = await response.json();
+
+        currentCandidates = (data.results || []).map(a => ({
+          id: a.id.replace("https://openalex.org/", ""),
+          name: a.display_name,
+          orcid: a.orcid ? a.orcid.replace("https://orcid.org/", "") : null,
+          institution: a.last_known_institutions?.[0]?.display_name || null,
+          country: a.last_known_institutions?.[0]?.country_code || null,
+          worksCount: a.works_count,
+          citedByCount: a.cited_by_count,
+          topics: (a.x_concepts || a.topics || []).slice(0, 3).map(t => t.display_name).join(" · ")
+        }));
+
+        if (affiliation) {
+          const key = affiliation.toLowerCase();
+          currentCandidates.sort((a, b) => {
+            const aMatch = (a.institution || "").toLowerCase().includes(key) ? 1 : 0;
+            const bMatch = (b.institution || "").toLowerCase().includes(key) ? 1 : 0;
+            return bMatch - aMatch;
+          });
+        }
+
+        if (!currentCandidates.length) {
+          showToast("OpenAlex 未找到匹配的研究者，请检查姓名拼写。");
+          setReportStatus("未找到候选人");
+          document.getElementById("candidatesCard").classList.remove("show");
+          return;
+        }
+
+        renderCandidates();
+        document.getElementById("candidatesCard").classList.add("show");
+        setReportStatus(`找到 ${currentCandidates.length} 位候选人，请确认选择`);
+      } catch (error) {
+        console.error(error);
+        showToast(`搜索失败：${error.message}`);
+        setReportStatus("搜索失败");
+      } finally {
+        isBusy = false;
+        btn.disabled = false;
+        btn.textContent = "🔍 搜索候选人";
+      }
+    }
+
+    function renderCandidates() {
+      const list = document.getElementById("candidateList");
+      list.innerHTML = currentCandidates.map((c, idx) => `
+        <div class="candidate-item" data-idx="${idx}" onclick="selectCandidate(${idx})">
+          <div class="candidate-main">
+            <div class="candidate-name">${escapeHtml(c.name)}</div>
+            <div class="candidate-meta">
+              <b>ORCID：</b>${c.orcid ? escapeHtml(c.orcid) : "无记录"} &nbsp;·&nbsp;
+              <b>机构：</b>${c.institution ? escapeHtml(c.institution) : "未知"}${c.country ? " (" + c.country + ")" : ""} &nbsp;·&nbsp;
+              <b>论文数：</b>${c.worksCount} &nbsp;·&nbsp;
+              <b>被引：</b>${c.citedByCount}
+              ${c.topics ? `<br><b>主要主题：</b>${escapeHtml(c.topics)}` : ""}
+            </div>
+          </div>
+          <button class="btn btn-primary candidate-pick-btn" type="button" onclick="event.stopPropagation(); selectCandidate(${idx})">
+            选择此人
+          </button>
+        </div>
+      `).join("");
+    }
+
+    async function selectCandidate(idx) {
+      selectedAuthor = currentCandidates[idx];
+      document.querySelectorAll(".candidate-item").forEach((el, i) => {
+        el.classList.toggle("selected", i === idx);
+      });
+
+      showToast(`已选择：${selectedAuthor.name}，正在拉取全部论文……`);
+      await loadAllWorksAndAnalyze();
+    }
+
+    // ========== 第二步：拉取全部论文 + 统计 + AI 报告 ==========
+    async function loadAllWorksAndAnalyze() {
+      if (isBusy) return;
+      isBusy = true;
+      setReportStatus("正在拉取全部论文（可能需要几秒）……");
+      renderTyping("正在从 OpenAlex 拉取全部论文……");
+
+      try {
+        allWorks = await fetchAllWorks(selectedAuthor.id);
+
+        if (!allWorks.length) {
+          document.getElementById("reportBody").innerHTML =
+            `<div class="warning-box">OpenAlex 中没有找到该作者的论文记录。</div>`;
+          setReportStatus("无论文数据");
+          return;
+        }
+
+        const venueStats = computeVenueStats(allWorks);
+        const yearStats = computeYearStats(allWorks);
+
+        setReportStatus(`已获取 ${allWorks.length} 篇论文，正在生成统计与 AI 报告……`);
+        renderStatsAndChart(venueStats, yearStats);
+
+        const apiKey = localStorage.getItem(STORAGE_KEYS.apiKey);
+        const model = document.getElementById("modelSelect").value;
+
+        const highlightPapers = computeHighlightPapers(allWorks);
+
+        if (apiKey && model) {
+          setReportStatus("正在生成 AI 快速画像……");
+          const summaryText = await generateQuickProfile(highlightPapers, venueStats, yearStats);
+          renderQuickProfile(summaryText, highlightPapers);
+        } else {
+          renderQuickProfile(null, highlightPapers);
+          showToast("未配置 API Key，已跳过 AI 文字总结，仅显示代表作与统计图表。");
+        }
+
+
+        setReportStatus(`完成 · 共 ${allWorks.length} 篇论文`);
+      } catch (error) {
+        console.error(error);
+        document.getElementById("reportBody").innerHTML =
+          `<div class="error-box">拉取或分析失败：${escapeHtml(error.message)}</div>`;
+        setReportStatus("失败");
+      } finally {
+        isBusy = false;
+      }
+    }
+	function reconstructOpenAlexAbstract(invertedIndex) {
+	  if (!invertedIndex || typeof invertedIndex !== "object") return "";
+
+	  const tokens = [];
+
+	  Object.entries(invertedIndex).forEach(([word, positions]) => {
+	    if (!Array.isArray(positions)) return;
+
+	    positions.forEach(position => {
+	      tokens[position] = word;
+	    });
+	  });
+
+  return tokens.filter(Boolean).join(" ");
+}
+
+    async function fetchAllWorks(authorId) {
+      const works = [];
+      let cursor = "*";
+      const perPage = 200;
+
+      while (cursor) {
+        const url = `https://api.openalex.org/works?filter=author.id:${authorId}&per_page=${perPage}&cursor=${encodeURIComponent(cursor)}`;
+        const response = await fetch(url);
+        if (!response.ok) break;
+        const data = await response.json();
+
+        (data.results || []).forEach(w => {
+	  works.push({
+  	    id: w.id,
+  	    title: w.display_name || "无标题",
+  	    year: w.publication_year || null,
+  	    venue: w.primary_location?.source?.display_name || "未知期刊/来源",
+ 	    doi: w.doi || null,
+  	    url: w.primary_location?.landing_page_url || w.doi || w.id || null,
+  	    citedBy: w.cited_by_count || 0,
+	    type: w.type || null,
+	    abstract: reconstructOpenAlexAbstract(w.abstract_inverted_index),
+	    concepts: (w.concepts || [])
+	      .slice(0, 8)
+	      .map(item => item.display_name)
+	      .filter(Boolean),
+	    topics: (w.topics || [])
+	      .slice(0, 5)
+	      .map(item => item.display_name)
+	      .filter(Boolean)
+	  });
+        });
+
+        cursor = data.meta?.next_cursor || null;
+        if (works.length >= 2000) break; // 安全上限
+      }
+
+      return works;
+    }
+
+    function computeVenueStats(works) {
+      const counts = {};
+      works.forEach(w => {
+        const key = w.venue || "未知期刊/来源";
+        counts[key] = (counts[key] || 0) + 1;
+      });
+      return Object.entries(counts)
+        .sort((a, b) => b[1] - a[1]);
+    }
+
+    function computeYearStats(works) {
+      const counts = {};
+      works.forEach(w => {
+        const key = w.year || "未知年份";
+        counts[key] = (counts[key] || 0) + 1;
+      });
+      return Object.entries(counts).sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+    }
+
+    function renderStatsAndChart(venueStats, yearStats) {
+      const totalWorks = allWorks.length;
+      const topVenues = venueStats.slice(0, 20);
+
+      const panel = `
+        <div class="data-panel">
+          ✅ <strong>已确认作者</strong>：${escapeHtml(selectedAuthor.name)}
+          ${selectedAuthor.orcid ? ` · ORCID: ${escapeHtml(selectedAuthor.orcid)}` : " · 无 ORCID 记录"}
+          · 机构：${escapeHtml(selectedAuthor.institution || "未知")}
+          · <strong>OpenAlex 共收录 ${totalWorks} 篇论文</strong>，涉及 ${venueStats.length} 个期刊/来源
+        </div>
+      `;
+
+      const chartHtml = `
+        <div class="chart-wrap">
+          <h3>📊 期刊 / 来源发表频率分布（前 ${topVenues.length} 项）</h3>
+          <p>基于 OpenAlex 全部 ${totalWorks} 篇论文记录统计，柱状高度为该期刊/来源发表的论文数量。</p>
+          <div class="chart-canvas-box"><canvas id="venueChartCanvas"></canvas></div>
+        </div>
+        <div class="chart-wrap">
+          <h3>📈 按年份发表数量</h3>
+          <div class="chart-canvas-box" style="height:260px;"><canvas id="yearChartCanvas"></canvas></div>
+        </div>
+        <div id="aiReportSlot"></div>
+      `;
+
+      document.getElementById("reportBody").innerHTML = panel + chartHtml;
+
+      const ctx1 = document.getElementById("venueChartCanvas").getContext("2d");
+      if (venueChart) venueChart.destroy();
+      venueChart = new Chart(ctx1, {
+        type: "bar",
+        data: {
+          labels: topVenues.map(v => v[0]),
+          datasets: [{
+            label: "论文数",
+            data: topVenues.map(v => v[1]),
+            backgroundColor: "#2c67d8"
+          }]
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, ticks: { precision: 0 } },
+            y: { ticks: { autoSkip: false, font: { size: 11 } } }
+          }
+        }
+      });
+
+      const ctx2 = document.getElementById("yearChartCanvas").getContext("2d");
+      new Chart(ctx2, {
+        type: "bar",
+        data: {
+          labels: yearStats.map(v => v[0]),
+          datasets: [{
+            label: "论文数",
+            data: yearStats.map(v => v[1]),
+            backgroundColor: "#5b8def"
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+      });
+    }
+
+    // ========== 快速画像：顶刊代表作 + 一段话总览（单次调用，不逐篇拆解） ==========
+
+    const TOP_TIER_VENUE_PATTERNS = [
+      /^nature$/i, /^nature\s/i, /\bnature\s+(materials|communications|physics|chemistry|energy|nanotechnology|methods)\b/i,
+      /^science$/i, /^science\s+advances$/i, /^science\s+robotics$/i,
+      /\bpnas\b/i, /proceedings of the national academy/i,
+      /physical review letters/i, /\bprl\b/i,
+      /advanced materials/i, /advanced functional materials/i, /advanced energy materials/i,
+      /^cell$/i, /^cell\s/i, /^joule$/i, /^matter$/i,
+      /nature reviews/i
+    ];
+
+    function isTopTierVenue(venueName) {
+      if (!venueName) return false;
+      return TOP_TIER_VENUE_PATTERNS.some(pattern => pattern.test(venueName));
+    }
+
+    function computeHighlightPapers(works) {
+      const topTier = works.filter(w => isTopTierVenue(w.venue));
+      const highlyCited = [...works]
+        .filter(w => !isTopTierVenue(w.venue))
+        .sort((a, b) => (b.citedBy || 0) - (a.citedBy || 0))
+        .slice(0, 5)
+        .filter(w => (w.citedBy || 0) >= 20);
+
+      const combined = [...topTier, ...highlyCited]
+        .sort((a, b) => (b.citedBy || 0) - (a.citedBy || 0));
+
+      const seen = new Set();
+      return combined.filter(w => {
+        const key = w.title + w.year;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    async function generateQuickProfile(highlightPapers, venueStats, yearStats) {
+      const apiKey = localStorage.getItem(STORAGE_KEYS.apiKey);
+      const model = document.getElementById("modelSelect").value;
+      if (!apiKey || !model) return null;
+
+      const compactList = allWorks.map(w => ({
+        t: w.title, v: w.venue, y: w.year, c: w.citedBy
+      }));
+
+      const topVenuesText = venueStats.slice(0, 8).map(([v, c]) => `${v}(${c}篇)`).join("、");
+      const yearsRange = yearStats.length ? `${yearStats[0][0]}–${yearStats[yearStats.length - 1][0]}` : "未知";
+      const recentYears = yearStats.slice(-5).map(([y, c]) => `${y}年${c}篇`).join("、");
+
+      const prompt = `你在帮用户快速了解一位学者，用户只想扫一眼就知道这个人是谁、做什么、水平如何。
+不要逐篇分析论文，不要输出表格，只写一段可以在10秒内读完的画像。
+
+研究者：${selectedAuthor.name}
+机构：${selectedAuthor.institution || "未知"}
+OpenAlex 论文总数：${allWorks.length}，总被引：${selectedAuthor.citedByCount || "未知"}
+发表年份跨度：${yearsRange}
+近5年发表：${recentYears}
+高频期刊：${topVenuesText}
+
+已识别的顶刊/高被引代表作（已通过规则筛选，真实存在，不需要你验证）：
+${highlightPapers.length ? highlightPapers.map(p => `- ${p.title}（${p.venue}, ${p.year}, 被引${p.citedBy}）`).join("\n") : "未发现顶刊或高被引论文"}
+
+全部论文简表（标题/期刊/年份/被引）供你判断研究方向演变，仅供参考不要逐条罗列：
+${JSON.stringify(compactList).slice(0, 6000)}
+
+请写一段中文画像，严格控制在150字以内，包含：
+1. 这个人整体是什么水平/活跃度（不要空洞夸奖，要基于数字）；
+2. 研究方向用最直白的话说清楚（不用专业黑话堆砌）；
+3. 如果有顶刊代表作，用一句话点出来；没有就直接说没有，不要硬夸。
+不要输出标题、不要分点、不要markdown格式，就是一段可以扫一眼看完的话。`;
+
+      try {
+        const requestBody = {
+          systemInstruction: { parts: [{ text: "你是帮用户快速评估学者的助手。只写一段极简、可扫读的中文总结，禁止编造顶刊论文，禁止空洞夸奖，禁止使用列表或标题。" }] },
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.2, topP: 0.9, maxOutputTokens: 500 }
+        };
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody)
+        });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData?.error?.message || `HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("").trim();
+        return text || null;
+      } catch (error) {
+        console.warn("快速画像生成失败：", error);
+        showToast(`AI 快速画像生成失败：${error.message}`);
+        return null;
+      }
+    }
+
+    function renderQuickProfile(summaryText, highlightPapers) {
+      const slot = document.getElementById("aiReportSlot");
+      if (!slot) return;
+
+      const highlightHtml = highlightPapers.length
+        ? highlightPapers.map(p => `
+            <div class="highlight-paper">
+              <div class="highlight-venue">${escapeHtml(p.venue)}${isTopTierVenue(p.venue) ? ' <span class="top-tier-tag">顶刊</span>' : ""}</div>
+              <div class="highlight-title">${p.url ? `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener">${escapeHtml(p.title)}</a>` : escapeHtml(p.title)}</div>
+              <div class="highlight-meta">${p.year || "年份未知"} · 被引 ${p.citedBy || 0}</div>
+            </div>
+          `).join("")
+        : `<div class="highlight-empty">未发现顶刊（Nature/Science/PNAS/PRL 等）或明显高被引论文。</div>`;
+
+      slot.innerHTML = `
+        <div class="chart-wrap">
+          <h3>⚡ 一眼看懂：AI 快速画像</h3>
+          <div class="quick-summary">${summaryText ? escapeHtml(summaryText) : "未生成 AI 总结（请检查 API Key 或模型配置）。"}</div>
+
+          <h3 style="margin-top:22px;">🏆 代表作 / 高被引亮点</h3>
+          <div class="highlight-list">${highlightHtml}</div>
+        </div>
+      `;
+    }
+
+    function appendAIReport(markdown) {
+      const slot = document.getElementById("aiReportSlot");
+      if (!slot) return;
+      slot.innerHTML = `<div class="chart-wrap"><h3>🤖 AI 分布解读</h3>${window.marked ? marked.parse(markdown) : escapeHtml(markdown)}</div>`;
+    }
+
+    function renderTyping(text) {
+      document.getElementById("reportBody").innerHTML = `
+        <div class="typing">${escapeHtml(text)}<span class="dots"><i></i><i></i><i></i></span></div>
+      `;
+    }
+
+    function setReportStatus(text) {
+      document.getElementById("reportStatus").textContent = text;
+    }
+
+    function resetAll() {
+      if (isBusy) return;
+      const confirmed = window.confirm("清空当前搜索、选择和报告？");
+      if (!confirmed) return;
+
+      document.getElementById("piName").value = "";
+      document.getElementById("piAffiliation").value = "";
+      currentCandidates = [];
+      selectedAuthor = null;
+      allWorks = [];
+      latestReportMarkdown = "";
+      document.getElementById("candidatesCard").classList.remove("show");
+      document.getElementById("candidatesCard").innerHTML = "";
+      document.getElementById("reportBody").innerHTML = `
+        <div class="empty-report">
+          先在上方搜索并选择正确的研究者，系统会拉取其全部论文并生成期刊分布直方图与 AI 核查报告。
+        </div>
+      `;
+      setReportStatus("等待选择研究者");
+    }
+
+    function exportReport() {
+      if (!allWorks.length) { showToast("当前没有可导出的数据。"); return; }
+
+      const venueStats = computeVenueStats(allWorks);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const safeName = (selectedAuthor?.name || "author").replace(/[\\/:*?"<>|]/g, "_");
+
+      let md = `# PI Intel 论文分布报告\n生成时间：${new Date().toLocaleString("zh-CN")}\n`;
+      md += `研究者：${selectedAuthor.name}\nORCID：${selectedAuthor.orcid || "无"}\n`;
+      md += `机构：${selectedAuthor.institution || "未知"}\n论文总数：${allWorks.length}\n\n`;
+      md += `## 期刊/来源分布\n\n| 期刊/来源 | 论文数 |\n|---|---|\n`;
+      venueStats.forEach(([v, c]) => { md += `| ${v} | ${c} |\n`; });
+
+      if (latestReportMarkdown) {
+        md += `\n## AI 分布解读\n\n${latestReportMarkdown}\n`;
+      }
+
+      const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `PI_Intel_${safeName}_${timestamp}.md`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showToast("报告已导出。");
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove("show"), 4200);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
